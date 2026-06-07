@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5">
           <h2 className="text-[13px] font-semibold text-[var(--color-text-main)] mb-1">Spending Overview</h2>
           <p className="text-[11px] text-[var(--color-text-muted)] mb-3.5">Income vs Expenses — last 6 months</p>
-          <div className="h-64 z-10">
+          <div className="h-[350px] z-10">
             {isLoading ? (
               <div className="h-full flex flex-col items-center justify-center">
                 <div className="w-6 h-6 border-2 border-[var(--color-primary-main)] border-t-transparent rounded-full animate-spin" />

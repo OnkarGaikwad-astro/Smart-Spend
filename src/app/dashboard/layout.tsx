@@ -90,7 +90,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <main className="p-5 max-w-6xl mx-auto pb-24 md:pb-5">
+      <main className="p-5 md:p-8 md:pt-10 max-w-6xl mx-auto pb-24 md:pb-12 min-h-[calc(100vh-64px)]">
         {children}
       </main>
 
