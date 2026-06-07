@@ -3,6 +3,7 @@
 import { FileText, Download, FileBarChart, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
+import { formatDateDDMMYYYY } from "@/lib/utils";
 
 export default function ReportsPage() {
   const { transactions } = useAppStore();
@@ -34,10 +35,9 @@ export default function ReportsPage() {
 
     if (!filtered.length) return alert('No transactions found for this period.');
 
-    const headers = ['Date', 'Title', 'Category', 'Type', 'Amount'];
     const csvContent = [
-      headers.join(','),
-      ...filtered.map(t => `${new Date(t.date).toLocaleDateString(undefined)},"${t.title}","${t.category}",${t.type},${t.amount}`)
+      "Date,Title,Category,Type,Amount",
+      ...filtered.map(t => `${formatDateDDMMYYYY(t.date)},"${t.title}","${t.category}",${t.type},${t.amount}`)
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
