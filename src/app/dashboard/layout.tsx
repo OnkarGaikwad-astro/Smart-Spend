@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
+import { BudgetModal } from "@/components/BudgetModal";
+import { GoalModal } from "@/components/GoalModal";
+import { DepositModal } from "@/components/DepositModal";
 import AIAssistantWidget from "@/components/AIAssistantWidget";
 import { useAppStore } from "@/lib/store";
+
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { ProfileModal } from '@/components/ProfileModal';
 
 export default function DashboardLayout({
   children,
@@ -14,70 +21,96 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { isAddModalOpen, setAddModalOpen } = useAppStore();
+  const router = useRouter();
+  const supabase = createClient();
+  const { userProfile, isAddModalOpen, setAddModalOpen, isBudgetModalOpen, setBudgetModalOpen, isGoalModalOpen, setGoalModalOpen, isDepositModalOpen, setDepositModalOpen, setProfileModalOpen, theme, toggleTheme } = useAppStore();
+
+  const getInitials = () => {
+    if (userProfile?.full_name) {
+      return userProfile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
+    if (userProfile?.email) {
+      return userProfile.email.substring(0, 2).toUpperCase();
+    }
+    return "U";
+  };
 
   return (
     <div className="min-h-screen text-[var(--color-text-main)] selection:bg-[var(--color-primary-soft)] selection:text-[var(--color-primary-main)] font-sans">
-      {/* Top Navigation Bar */}
-      <nav className="flex items-center justify-between px-5 py-3.5 bg-[var(--color-surface)] border-b border-[var(--color-border-subtle)] sticky top-0 z-50 shadow-sm">
-        <Link href="/dashboard" className="flex items-center gap-2 font-mono font-bold text-[15px] text-[var(--color-primary-main)]">
-          <span className="w-7 h-7 bg-[var(--color-primary-main)] rounded-lg flex items-center justify-center text-white text-[13px]">
-            ₹
-          </span>
-          SmartSpend AI
-        </Link>
-        
-        {/* Navigation Tabs (Hidden on very small screens, scrollable on mobile) */}
-        <div className="hidden md:flex gap-0.5 bg-[var(--color-surface-2)] rounded-xl p-1">
-          <NavTab href="/dashboard" label="Dashboard" active={pathname === "/dashboard"} />
-          <NavTab href="/dashboard/transactions" label="Transactions" active={pathname === "/dashboard/transactions"} />
-          <NavTab href="/dashboard/budget" label="Budget" active={pathname === "/dashboard/budget"} />
-          <NavTab href="/dashboard/reports" label="Reports" active={pathname === "/dashboard/reports"} />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setAddModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] text-[13px] font-semibold hover:bg-[var(--color-primary-main)] hover:text-white transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New
-          </motion.button>
+      
+      {/* Top Navigation */}
+      <nav className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] sticky top-0 z-40 backdrop-blur-md bg-opacity-80">
+        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-[10px] overflow-hidden shadow-sm border border-[var(--color-border-subtle)]">
+              <img src="/icon.png" alt="SmartSpend Logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-semibold text-[17px] tracking-tight">SmartSpend</span>
+          </div>
           
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-primary-main)] to-[var(--color-purple-main)] flex items-center justify-center text-white text-xs font-semibold cursor-pointer shadow-sm">
-            AR
+          <div className="hidden md:flex items-center space-x-1">
+            <Link href="/dashboard" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Overview</Link>
+            <Link href="/dashboard/transactions" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/transactions' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Transactions</Link>
+            <Link href="/dashboard/budget" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/budget' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Budget & Goals</Link>
+            <Link href="/dashboard/analytics" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/analytics' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Analytics</Link>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={async () => {
+                await supabase.auth.signOut();
+                useAppStore.setState({ userProfile: null, transactions: [], budgets: [], goals: [] });
+                router.push('/login');
+              }}
+              className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-[var(--color-danger-soft)] text-[var(--color-danger-main)] hover:bg-red-100 transition-colors"
+            >
+              Log Out
+            </button>
+            <button 
+              onClick={() => setProfileModalOpen(true)}
+              className="w-8 h-8 rounded-full bg-[var(--color-surface-2)] flex items-center justify-center border border-[var(--color-border-subtle)] text-[12px] font-medium overflow-hidden hover:ring-2 hover:ring-[var(--color-primary-main)] transition-all"
+            >
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                getInitials()
+              )}
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Scrollable Tabs */}
-      <div className="md:hidden flex overflow-x-auto gap-1 bg-[var(--color-surface)] px-4 py-2 border-b border-[var(--color-border-subtle)] scrollbar-hide">
-        <NavTab href="/dashboard" label="Dashboard" active={pathname === "/dashboard"} />
-        <NavTab href="/dashboard/transactions" label="Transactions" active={pathname === "/dashboard/transactions"} />
-        <NavTab href="/dashboard/budget" label="Budget" active={pathname === "/dashboard/budget"} />
-        <NavTab href="/dashboard/reports" label="Reports" active={pathname === "/dashboard/reports"} />
+      {/* Mobile Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] z-40 pb-safe">
+        <div className="flex justify-around items-center h-16 px-2">
+          <MobileNavLink href="/dashboard" label="Overview" pathname={pathname} />
+          <MobileNavLink href="/dashboard/transactions" label="List" pathname={pathname} />
+          <MobileNavLink href="/dashboard/budget" label="Budgets" pathname={pathname} />
+          <MobileNavLink href="/dashboard/analytics" label="Analytics" pathname={pathname} />
+        </div>
       </div>
 
-      {/* Main Content Area */}
-      <main className="p-5 max-w-6xl mx-auto">
+      <main className="p-5 max-w-6xl mx-auto pb-24 md:pb-5">
         {children}
       </main>
 
       <AddTransactionModal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} />
+      <BudgetModal isOpen={isBudgetModalOpen} onClose={() => setBudgetModalOpen(false)} />
+      <GoalModal isOpen={isGoalModalOpen} onClose={() => setGoalModalOpen(false)} />
+      <DepositModal isOpen={isDepositModalOpen} onClose={() => setDepositModalOpen(false)} />
       
       {/* Mobile Floating Action Button */}
       <motion.button 
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setAddModalOpen(true)}
-        className="sm:hidden fixed bottom-24 right-6 w-14 h-14 bg-[var(--color-primary-main)] text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.3)] z-40"
+        className="sm:hidden fixed bottom-[150px] right-4 w-14 h-14 bg-[var(--color-primary-main)] text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.3)] z-40"
       >
         <Plus className="w-6 h-6" />
       </motion.button>
 
       <AIAssistantWidget />
+      <ProfileModal />
     </div>
   );
 }
@@ -90,6 +123,20 @@ function NavTab({ href, label, active = false }: { href: string; label: string; 
         active 
           ? "bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-[0_1px_3px_rgba(0,0,0,0.06)]" 
           : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function MobileNavLink({ href, label, pathname }: { href: string; label: string; pathname: string }) {
+  const isActive = pathname === href;
+  return (
+    <Link 
+      href={href} 
+      className={`flex flex-col items-center justify-center w-full h-full text-[12px] font-medium transition-colors ${
+        isActive ? 'text-[var(--color-primary-main)]' : 'text-[var(--color-text-muted)]'
       }`}
     >
       {label}

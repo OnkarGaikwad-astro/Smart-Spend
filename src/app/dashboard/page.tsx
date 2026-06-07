@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Wallet, Activity } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
+import { formatDateReadable, getIcon } from "@/lib/utils";
+import { type Transaction } from "@/lib/store";
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function DashboardPage() {
   const { transactions, isLoading, fetchData } = useAppStore();
@@ -17,6 +20,29 @@ export default function DashboardPage() {
   const totalBalance = totalIncome - totalExpense;
   const recentTxns = transactions.slice(0, 5);
 
+  const chartData = useMemo(() => {
+    const dataMap = new Map();
+    const months = [];
+    for(let i=5; i>=0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const monthStr = d.toLocaleDateString('en-US', { month: 'short' });
+      months.push(monthStr);
+      dataMap.set(monthStr, { name: monthStr, Income: 0, Expenses: 0 });
+    }
+
+    transactions.forEach(t => {
+      const d = new Date(t.date);
+      const monthStr = d.toLocaleDateString('en-US', { month: 'short' });
+      if(dataMap.has(monthStr)) {
+        const item = dataMap.get(monthStr);
+        if(t.type === 'INCOME') item.Income += t.amount;
+        if(t.type === 'EXPENSE') item.Expenses += Math.abs(t.amount);
+      }
+    });
+    return months.map(m => dataMap.get(m));
+  }, [transactions]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -24,7 +50,7 @@ export default function DashboardPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as any, stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -75,10 +101,31 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5">
           <h2 className="text-[13px] font-semibold text-[var(--color-text-main)] mb-1">Spending Overview</h2>
           <p className="text-[11px] text-[var(--color-text-muted)] mb-3.5">Income vs Expenses — last 6 months</p>
-          <div className="h-44 flex items-center justify-center border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] rounded-xl">
-            <p className="text-[var(--color-text-muted)] flex items-center gap-2 text-[12px]">
-              <Activity className="w-4 h-4" /> Not enough data to generate chart.
-            </p>
+          <div className="h-64 z-10">
+            {isLoading ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <div className="w-6 h-6 border-2 border-[var(--color-primary-main)] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : transactions.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 0, bottom: 0, left: 0 }}>
+                  <XAxis dataKey="name" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: '10px', color: 'var(--color-text-main)', fontSize: '12px' }}
+                    cursor={{ fill: 'var(--color-surface-2)' }}
+                    formatter={(value, name) => [`₹${value}`, name]}
+                  />
+                  <Bar dataKey="Income" fill="var(--color-secondary-main)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="Expenses" fill="var(--color-danger-main)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] rounded-xl">
+                <p className="text-[var(--color-text-muted)] flex items-center gap-2 text-[12px]">
+                  <Activity className="w-4 h-4" /> Not enough data to generate chart.
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -97,12 +144,7 @@ export default function DashboardPage() {
               recentTxns.map(txn => (
                 <TransactionItem 
                   key={txn.id}
-                  title={txn.title} 
-                  category={txn.category} 
-                  amount={`${txn.type === 'INCOME' ? '+' : '−'}₹${Math.abs(txn.amount).toLocaleString('en-IN')}`} 
-                  date={txn.date} 
-                  icon={txn.icon || "📝"}
-                  positive={txn.type === 'INCOME'}
+                  txn={txn}
                 />
               ))
             ) : (
@@ -123,13 +165,13 @@ function OverviewCard({ title, amount, trend, icon, accentBg, positive = true }:
   return (
     <motion.div 
       whileHover={{ y: -2 }}
-      className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4 transition-all"
+      className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-6 transition-all"
     >
       <div className={`w-8 h-8 rounded-[10px] mb-2.5 flex items-center justify-center ${accentBg}`}>
         {icon}
       </div>
       <div className="text-[11px] font-medium text-[var(--color-text-muted)] tracking-[0.04em] uppercase mb-1.5">{title}</div>
-      <div className="font-mono text-[22px] font-bold text-[var(--color-text-main)] mb-1">{amount}</div>
+      <div className="font-mono text-[24px] font-bold text-[var(--color-text-main)] mb-1.5">{amount}</div>
       <div className="text-[12px] text-[var(--color-text-muted)] flex items-center gap-1">
         {positive ? <TrendingUp className="w-3.5 h-3.5 text-[var(--color-secondary-main)]" /> : <TrendingUp className="w-3.5 h-3.5 text-[var(--color-danger-main)]" />}
         <span className={positive ? 'text-[var(--color-secondary-main)]' : 'text-[var(--color-danger-main)]'}>{trend}</span>
@@ -138,28 +180,24 @@ function OverviewCard({ title, amount, trend, icon, accentBg, positive = true }:
   );
 }
 
-const getIcon = (name: string) => {
-  switch (name) {
-    case 'music': return "🎵";
-    case 'pizza': return "🍕";
-    case 'briefcase': return "💼";
-    case 'car': return "🚗";
-    case 'receipt': return "🧾";
-    default: return "📄";
-  }
-};
+function TransactionItem({ txn }: { txn: Transaction }) {
+  const { setAddModalOpen } = useAppStore();
+  const positive = txn.type === 'INCOME';
+  const amount = `${positive ? '+' : '−'}₹${Math.abs(txn.amount).toLocaleString('en-IN')}`;
 
-function TransactionItem({ title, category, amount, date, icon, positive = false }: { title: string, category: string, amount: string, date: string, icon: string, positive?: boolean }) {
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0">
+    <div 
+      onClick={() => setAddModalOpen(true, txn)}
+      className="flex items-center gap-3 py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-surface-2)] -mx-2 px-2 rounded-lg transition-colors cursor-pointer"
+    >
       <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[18px] shrink-0 bg-[var(--color-surface-2)] shadow-sm">
-        {getIcon(icon)}
+        {getIcon(txn.icon === 'receipt' ? txn.category : (txn.icon || txn.category), txn.type)}
       </div>
       <div className="flex-1">
-        <div className="text-[13px] font-medium text-[var(--color-text-main)]">{title}</div>
-        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{category} · {date}</div>
+        <div className="text-[13px] font-medium text-[var(--color-text-main)]">{txn.title}</div>
+        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{txn.category} · {formatDateReadable(txn.date)}</div>
       </div>
-      <div className={`font-mono text-[13px] font-bold ${positive ? 'text-[var(--color-secondary-main)]' : 'text-[var(--color-danger-main)]'}`}>
+      <div className={`font-mono text-[13px] font-bold ${positive ? 'text-emerald-500' : 'text-[var(--color-danger-main)]'}`}>
         {amount}
       </div>
     </div>

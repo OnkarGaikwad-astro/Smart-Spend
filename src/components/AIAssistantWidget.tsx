@@ -1,46 +1,81 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Send, Sparkles } from 'lucide-react';
 
+import { useAppStore } from '@/lib/store';
+
 export default function AIAssistantWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { transactions, goals, isAIOpen, setAIOpen, aiInitialMsg } = useAppStore();
   const [messages, setMessages] = useState<{role: 'user' | 'ai', content: string}[]>([
-    { role: 'ai', content: 'Hi there! I am your AI financial assistant. How can I help you today?' }
+    { role: 'ai', content: 'Hi there! I am Aurex, your AI financial assistant. How can I help you today?' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleOpen = () => setIsOpen(!isOpen);
+  const toggleOpen = () => setAIOpen(!isAIOpen);
 
-  const handleSend = (e?: React.FormEvent) => {
+  useEffect(() => {
+    if (isAIOpen && aiInitialMsg) {
+      handleSend(undefined, aiInitialMsg);
+      setAIOpen(true, ''); // Clear initial message so it doesn't resend
+    }
+  }, [isAIOpen, aiInitialMsg]);
+
+  const handleSend = async (e?: React.FormEvent, customMsg?: string) => {
     e?.preventDefault();
-    if (!input.trim()) return;
+    const userText = customMsg || input;
+    if (!userText.trim() || isLoading) return;
 
-    // Add user message
-    const newMessages = [...messages, { role: 'user' as const, content: input }];
+    const newMessages = [...messages, { role: 'user' as const, content: userText }];
     setMessages(newMessages);
     setInput('');
+    setIsLoading(true);
 
-    // Mock AI Response (for now)
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        content: "I'm still learning! Soon I'll be able to analyze your spending and answer financial questions using Gemini AI." 
-      }]);
-    }, 1000);
+    try {
+      const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0);
+      const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          context: {
+            totalBalance: totalIncome - totalExpense,
+            totalIncome,
+            totalExpense,
+            transactions,
+            goals
+          }
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessages(prev => [...prev, { role: 'ai', content: data.content }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', content: `Error: ${data.error}` }]);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'ai', content: 'Sorry, I encountered a network error connecting to the AI.' }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {isAIOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2, type: 'spring', bounce: 0.25 }}
-            className="fixed bottom-24 right-6 w-[350px] h-[500px] z-50 flex flex-col overflow-hidden shadow-2xl rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] backdrop-blur-2xl"
+            className="fixed bottom-[80px] md:bottom-24 right-4 md:right-6 w-[calc(100vw-32px)] md:w-[350px] h-[500px] max-h-[70vh] z-50 flex flex-col overflow-hidden shadow-2xl rounded-[24px] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] backdrop-blur-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-subtle)] bg-white/[0.02]">
@@ -96,10 +131,14 @@ export default function AIAssistantWidget() {
                 />
                 <button 
                   type="submit"
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isLoading}
                   className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--color-primary-main)] text-white disabled:opacity-50 transition-opacity"
                 >
-                  <Send className="w-4 h-4 ml-0.5" />
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 ml-0.5" />
+                  )}
                 </button>
               </form>
             </div>
@@ -112,7 +151,7 @@ export default function AIAssistantWidget() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleOpen}
-        className="fixed bottom-6 right-6 w-14 h-14 z-50 flex items-center justify-center rounded-full shadow-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] backdrop-blur-xl text-[var(--color-primary-main)] hover:bg-[var(--color-surface-2)] transition-colors"
+        className="fixed bottom-[80px] md:bottom-6 right-4 md:right-6 w-14 h-14 z-50 flex items-center justify-center rounded-full shadow-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] backdrop-blur-xl text-[var(--color-primary-main)] hover:bg-[var(--color-surface-2)] transition-colors"
       >
         <Bot className="w-6 h-6" />
       </motion.button>

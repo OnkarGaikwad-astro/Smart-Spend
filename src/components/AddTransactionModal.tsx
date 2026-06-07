@@ -1,36 +1,92 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { X, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Calendar, Tag, FileText, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
 export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const addTransaction = useAppStore(state => state.addTransaction);
+  const { addTransaction, updateTransaction, deleteTransaction, editingTransaction, budgets } = useAppStore();
   
-  const [type, setType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
-  const [amount, setAmount] = useState('');
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!amount || !title || !category) return;
-    
-    addTransaction({
-      title,
-      category,
-      amount: type === 'EXPENSE' ? -Math.abs(Number(amount)) : Math.abs(Number(amount)),
-      date: new Date().toISOString(),
-      type
-    });
-    
-    // Reset and close
-    setAmount('');
-    setTitle('');
-    setCategory('');
-    onClose();
+  const getLocalISODateTime = (dateToUse?: string) => {
+    const d = dateToUse ? new Date(dateToUse) : new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
   };
+
+  const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [amount, setAmount] = useState("");
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("Food");
+  const [date, setDate] = useState(getLocalISODateTime());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingTransaction) {
+        setType(editingTransaction.type);
+        setAmount(Math.abs(editingTransaction.amount).toString());
+        setTitle(editingTransaction.title);
+        setCategory(editingTransaction.category);
+        setDate(getLocalISODateTime(editingTransaction.date));
+      } else {
+        setType("EXPENSE");
+        setAmount("");
+        setTitle("");
+        setCategory("Food");
+        setDate(getLocalISODateTime());
+      }
+    }
+  }, [isOpen, editingTransaction]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amount || !title) return;
+
+    setIsSubmitting(true);
+    const parsedAmount = type === "EXPENSE" ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
+
+    try {
+      if (editingTransaction) {
+        await updateTransaction(editingTransaction.id, {
+          title,
+          amount: parsedAmount,
+          type,
+          category,
+          date: new Date(date).toISOString(),
+        });
+      } else {
+        await addTransaction({
+          title,
+          amount: parsedAmount,
+          type,
+          category,
+          date: new Date(date).toISOString(),
+        });
+      }
+      onClose();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingTransaction) return;
+    if (confirm("Are you sure you want to delete this transaction?")) {
+      setIsSubmitting(true);
+      await deleteTransaction(editingTransaction.id);
+      setIsSubmitting(false);
+      onClose();
+    }
+  };
+
+  const budgetCategories = budgets.map(b => b.category);
+  const defaultExpenseCategories = ["Food", "Transport", "Subscriptions", "Entertainment", "Shopping", "Bills"];
+  const expenseCategories = Array.from(new Set([...budgetCategories, ...defaultExpenseCategories, "Other"]));
+
+  const categories = type === "EXPENSE" 
+    ? expenseCategories
+    : ["Scholarship", "Parents", "Sister", "Friends", "Other"];
 
   return (
     <AnimatePresence>
@@ -56,11 +112,18 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
                 <div className="w-6 h-6 rounded-md bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </div>
-                New Transaction
+                {editingTransaction ? "Edit Transaction" : "New Transaction"}
               </h2>
-              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)] transition-colors">
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {editingTransaction && (
+                  <button onClick={handleDelete} className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--color-danger-main)] hover:bg-[var(--color-danger-soft)] transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)] transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -69,81 +132,77 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
               <div className="flex gap-2 p-1 bg-[var(--color-surface-2)] rounded-[12px]">
                 <button
                   type="button"
-                  onClick={() => setType('EXPENSE')}
-                  className={`flex-1 py-2 text-[13px] font-medium rounded-[10px] transition-all flex items-center justify-center gap-2 ${type === 'EXPENSE' ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border-subtle)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  onClick={() => setType("EXPENSE")}
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "EXPENSE" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger-main)] shadow-sm" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"}`}
                 >
-                  <ArrowDownRight className={`w-4 h-4 ${type === 'EXPENSE' ? 'text-[var(--color-danger-main)]' : ''}`} />
                   Expense
                 </button>
                 <button
                   type="button"
-                  onClick={() => setType('INCOME')}
-                  className={`flex-1 py-2 text-[13px] font-medium rounded-[10px] transition-all flex items-center justify-center gap-2 ${type === 'INCOME' ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border-subtle)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                  onClick={() => setType("INCOME")}
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "INCOME" ? "bg-[var(--color-secondary-soft)] text-[var(--color-secondary-main)] shadow-sm" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"}`}
                 >
-                  <ArrowUpRight className={`w-4 h-4 ${type === 'INCOME' ? 'text-[var(--color-secondary-main)]' : ''}`} />
                   Income
                 </button>
               </div>
 
-              {/* Amount Input */}
-              <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[var(--color-text-muted)] ml-1">Amount (₹)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-medium">₹</span>
-                  <input 
-                    type="number"
-                    required
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[12px] text-[var(--color-text-main)] text-[15px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors placeholder:text-[var(--color-text-muted)]"
-                  />
-                </div>
+              {/* Amount */}
+              <div>
+                <label className="block text-[12px] font-medium text-[var(--color-text-muted)] mb-1.5">Amount (₹)</label>
+                <input 
+                  type="number" 
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full px-3.5 py-2.5 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[10px] text-[var(--color-text-main)] text-[16px] font-mono focus:outline-none focus:border-[var(--color-primary-main)] transition-colors"
+                />
               </div>
 
-              {/* Title Input */}
-              <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[var(--color-text-muted)] ml-1">Description</label>
-                <div className="relative">
-                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+              {/* Title & Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-medium text-[var(--color-text-muted)] mb-1.5">Title</label>
                   <input 
-                    type="text"
+                    type="text" 
                     required
                     value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder="What was this for?"
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[12px] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors placeholder:text-[var(--color-text-muted)]"
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Netflix"
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[10px] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors"
                   />
                 </div>
-              </div>
-
-              {/* Category Input */}
-              <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[var(--color-text-muted)] ml-1">Category</label>
-                <div className="relative">
-                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
-                  <input 
-                    type="text"
-                    required
+                <div>
+                  <label className="block text-[12px] font-medium text-[var(--color-text-muted)] mb-1.5">Category</label>
+                  <select 
                     value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    placeholder="e.g. Food Delivery"
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[12px] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors placeholder:text-[var(--color-text-muted)]"
-                  />
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[10px] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors appearance-none cursor-pointer"
+                  >
+                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-[var(--color-primary-main)] to-[var(--color-accent-main)] text-white rounded-[12px] font-semibold text-[14px] shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.3)] transition-all"
-                >
-                  Save Transaction
-                </motion.button>
+              {/* Date */}
+              <div>
+                <label className="block text-[12px] font-medium text-[var(--color-text-muted)] mb-1.5">Date & Time</label>
+                <input 
+                  type="datetime-local" 
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[10px] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors [color-scheme:dark]"
+                />
               </div>
 
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full py-2.5 mt-2 bg-gradient-to-r from-[var(--color-primary-main)] to-[var(--color-purple-main)] text-white font-medium rounded-[10px] text-[14px] hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : (editingTransaction ? "Save Changes" : "Save Transaction")}
+              </button>
             </form>
           </motion.div>
         </div>

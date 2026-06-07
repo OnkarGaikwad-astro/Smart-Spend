@@ -2,8 +2,53 @@
 
 import { FileText, Download, FileBarChart, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAppStore } from "@/lib/store";
 
 export default function ReportsPage() {
+  const { transactions } = useAppStore();
+
+  const handleExport = (period: 'this_month' | 'last_month' | 'year') => {
+    if (!transactions.length) return;
+    
+    const now = new Date();
+    let filtered = transactions;
+    
+    if (period === 'this_month') {
+      filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+    } else if (period === 'last_month') {
+      filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+      });
+    } else if (period === 'year') {
+      filtered = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === now.getFullYear();
+      });
+    }
+
+    if (!filtered.length) return alert('No transactions found for this period.');
+
+    const headers = ['Date', 'Title', 'Category', 'Type', 'Amount'];
+    const csvContent = [
+      headers.join(','),
+      ...filtered.map(t => `${new Date(t.date).toLocaleDateString(undefined)},"${t.title}","${t.category}",${t.type},${t.amount}`)
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `smartspend_export_${period}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -11,7 +56,7 @@ export default function ReportsPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as any, stiffness: 300, damping: 24 } }
   };
 
   const mockReports = [
@@ -77,15 +122,15 @@ export default function ReportsPage() {
           <h2 className="text-[14px] font-semibold text-[var(--color-text-main)] mb-3.5 border-b border-[var(--color-border-subtle)] pb-3">Quick Export</h2>
           
           <div className="space-y-2.5">
-            <button className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
+            <button onClick={() => handleExport('this_month')} className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
               <CalendarDays className="w-4 h-4 text-[var(--color-text-muted)]" />
               Export This Month (CSV)
             </button>
-            <button className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
+            <button onClick={() => handleExport('last_month')} className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
               <CalendarDays className="w-4 h-4 text-[var(--color-text-muted)]" />
               Export Last Month (CSV)
             </button>
-            <button className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
+            <button onClick={() => handleExport('year')} className="w-full flex items-center gap-2.5 p-3 rounded-[10px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[12px] font-medium text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] hover:border-[var(--color-primary-soft)] transition-colors">
               <CalendarDays className="w-4 h-4 text-[var(--color-text-muted)]" />
               Export Full Year (CSV)
             </button>

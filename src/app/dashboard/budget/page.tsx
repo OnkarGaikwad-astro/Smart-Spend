@@ -5,14 +5,29 @@ import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 
 export default function BudgetPage() {
-  const { budgets, isLoading, fetchData } = useAppStore();
+  const { budgets, transactions, isLoading, fetchData } = useAppStore();
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const totalAllocated = budgets.reduce((acc, curr) => acc + curr.allocated, 0);
-  const totalSpent = budgets.reduce((acc, curr) => acc + curr.spent, 0);
+  // Dynamically calculate 'spent' based on actual transactions in the current month
+  const computedBudgets = budgets.map(budget => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    const spent = transactions
+      .filter(t => {
+        const d = new Date(t.date);
+        return t.category === budget.category && t.type === 'EXPENSE' && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    return { ...budget, spent };
+  });
+
+  const totalAllocated = computedBudgets.reduce((acc, curr) => acc + curr.allocated, 0);
+  const totalSpent = computedBudgets.reduce((acc, curr) => acc + curr.spent, 0);
   const totalPercentage = totalAllocated > 0 ? Math.min(Math.round((totalSpent / totalAllocated) * 100), 100) : 0;
   const left = Math.max(totalAllocated - totalSpent, 0);
 
@@ -23,7 +38,7 @@ export default function BudgetPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as any, stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -59,7 +74,12 @@ export default function BudgetPage() {
       <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5 mb-3.5">
         <div className="flex justify-between items-center mb-3.5 border-b border-[var(--color-border-subtle)] pb-3">
           <span className="text-[14px] font-semibold text-[var(--color-text-main)]">Category budgets</span>
-          <span className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer">AI optimize ✨</span>
+          <span 
+            onClick={() => useAppStore.getState().setBudgetModalOpen(true)}
+            className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer"
+          >
+            + Add Category
+          </span>
         </div>
 
         <div className="flex flex-col gap-3.5">
@@ -67,8 +87,8 @@ export default function BudgetPage() {
             <div className="flex justify-center py-6">
               <div className="w-5 h-5 border-2 border-[var(--color-primary-main)] border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : budgets.length > 0 ? (
-            budgets.map((budget) => (
+          ) : computedBudgets.length > 0 ? (
+            computedBudgets.map((budget) => (
               <BudgetBarItem key={budget.id} budget={budget} />
             ))
           ) : (
@@ -82,14 +102,41 @@ export default function BudgetPage() {
       <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5">
         <div className="flex justify-between items-center mb-3.5 border-b border-[var(--color-border-subtle)] pb-3">
           <span className="text-[14px] font-semibold text-[var(--color-text-main)]">Savings goals</span>
-          <span className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer">+ New goal</span>
+          <span 
+            onClick={() => useAppStore.getState().setGoalModalOpen(true)}
+            className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer"
+          >
+            + New goal
+          </span>
         </div>
 
         <div className="flex flex-col gap-2.5">
-          {/* Placeholders for Savings Goals matching the snippet */}
-          <GoalCard name="💻 New Laptop" targetDate="Dec 2025" saved={16800} target={40000} percent={42} color="primary" />
-          <GoalCard name="🏖 Goa Trip" targetDate="Feb 2026" saved={10650} target={15000} percent={71} color="secondary" />
+          {useAppStore.getState().goals.length > 0 ? (
+            useAppStore.getState().goals.map((goal) => {
+              const percent = goal.target > 0 ? Math.min(Math.round((goal.saved / goal.target) * 100), 100) : 0;
+              return (
+                <GoalCard 
+                  key={goal.id} 
+                  goal={goal}
+                  percent={percent} 
+                />
+              );
+            })
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-[12px] text-[var(--color-text-muted)]">No savings goals set. Create one to start saving!</p>
+            </div>
+          )}
         </div>
+        
+        {useAppStore.getState().goals.length > 0 && (
+          <button 
+            onClick={() => useAppStore.getState().sweepLeftover()}
+            className="w-full mt-4 py-2 bg-[var(--color-surface-2)] hover:bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] font-medium rounded-[10px] text-[12px] transition-colors border border-[var(--color-border-subtle)]"
+          >
+            🧹 Auto-Sweep Leftover to Goals
+          </button>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -119,7 +166,10 @@ function BudgetBarItem({ budget }: { budget: any }) {
   }
 
   return (
-    <div className="mb-1">
+    <div 
+      onClick={() => useAppStore.getState().setBudgetModalOpen(true, budget)}
+      className="mb-1 p-2 hover:bg-[var(--color-surface-2)] rounded-[10px] transition-colors cursor-pointer -mx-2 px-2"
+    >
       <div className="flex justify-between items-center mb-1.5">
         <span className="text-[13px] font-medium text-[var(--color-text-main)] flex items-center gap-1.5">
           {budget.icon || "🎯"} {budget.category}
@@ -141,8 +191,8 @@ function BudgetBarItem({ budget }: { budget: any }) {
   );
 }
 
-function GoalCard({ name, targetDate, saved, target, percent, color }: any) {
-  const isPrimary = color === "primary";
+function GoalCard({ goal, percent }: any) {
+  const isPrimary = goal.color === "primary";
   const badgeBg = isPrimary ? "bg-[var(--color-primary-soft)]" : "bg-[var(--color-secondary-soft)]";
   const badgeText = isPrimary ? "text-[var(--color-primary-main)]" : "text-[var(--color-secondary-main)]";
   const barColor = isPrimary ? "bg-[var(--color-primary-main)]" : "bg-[var(--color-secondary-main)]";
@@ -150,13 +200,21 @@ function GoalCard({ name, targetDate, saved, target, percent, color }: any) {
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[12px] p-3.5 hover:shadow-sm transition-shadow">
       <div className="flex justify-between items-start mb-2.5">
-        <div>
-          <div className="text-[13px] font-semibold text-[var(--color-text-main)]">{name}</div>
-          <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">Target by {targetDate}</div>
+        <div className="flex-1 cursor-pointer" onClick={() => useAppStore.getState().setGoalModalOpen(true, goal)}>
+          <div className="text-[13px] font-semibold text-[var(--color-text-main)] hover:text-[var(--color-primary-main)] transition-colors">{goal.name}</div>
+          <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">Target by {goal.target_date}</div>
         </div>
-        <span className={`text-[11px] px-2.5 py-0.5 rounded-[20px] font-medium ${badgeBg} ${badgeText}`}>
-          {percent}%
-        </span>
+        <div className="flex flex-col items-end gap-1.5">
+          <span className={`text-[11px] px-2.5 py-0.5 rounded-[20px] font-medium ${badgeBg} ${badgeText}`}>
+            {percent}%
+          </span>
+          <button 
+            onClick={(e) => { e.stopPropagation(); useAppStore.getState().setDepositModalOpen(true, goal); }}
+            className="text-[10px] bg-[var(--color-surface-2)] hover:bg-[var(--color-secondary-main)] hover:text-white text-[var(--color-text-muted)] px-2 py-0.5 rounded-full transition-colors"
+          >
+            + Deposit
+          </button>
+        </div>
       </div>
       <div className="h-2 bg-[var(--color-surface-2)] rounded-full overflow-hidden mb-1.5">
         <motion.div 
@@ -167,8 +225,8 @@ function GoalCard({ name, targetDate, saved, target, percent, color }: any) {
         />
       </div>
       <div className="flex justify-between text-[11px] text-[var(--color-text-muted)] mt-1.5">
-        <span>₹{saved.toLocaleString('en-IN')} saved</span>
-        <span>₹{target.toLocaleString('en-IN')} target</span>
+        <span>₹{goal.saved.toLocaleString('en-IN')} saved</span>
+        <span>₹{goal.target.toLocaleString('en-IN')} target</span>
       </div>
     </div>
   );

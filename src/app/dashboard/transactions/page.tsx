@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Plus, Search, Filter, Download } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
+import { formatDateReadable, getIcon } from "@/lib/utils";
+import { type Transaction } from "@/lib/store";
 
 export default function TransactionsPage() {
   const { transactions, isLoading, fetchData, setAddModalOpen } = useAppStore();
@@ -27,9 +29,11 @@ export default function TransactionsPage() {
     show: { opacity: 1, transition: { staggerChildren: 0.05 } }
   };
 
+  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category))).sort();
+
   const itemVariants = {
     hidden: { opacity: 0, x: -10 },
-    show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, x: 0, transition: { type: "spring" as any, stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -53,11 +57,9 @@ export default function TransactionsPage() {
             className="flex-1 sm:flex-none px-3.5 py-2.5 border border-[var(--color-border-subtle)] rounded-[10px] bg-[var(--color-surface)] text-[var(--color-text-main)] text-[13px] focus:outline-none focus:border-[var(--color-primary-main)] transition-colors appearance-none cursor-pointer"
           >
             <option>All categories</option>
-            <option>Food</option>
-            <option>Travel</option>
-            <option>Entertainment</option>
-            <option>Education</option>
-            <option>Income</option>
+            {uniqueCategories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
           <motion.button 
             whileHover={{ scale: 1.03 }}
@@ -71,9 +73,9 @@ export default function TransactionsPage() {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <AiChip text="🤖 Spending this week" />
-        <AiChip text="🤖 Find subscriptions" />
-        <AiChip text="🤖 Unusual expenses" />
+        <AiChip text="🤖 Spending this week" onClick={() => useAppStore.getState().setAIOpen(true, "How much did I spend this week?")} />
+        <AiChip text="🤖 Find subscriptions" onClick={() => useAppStore.getState().setAIOpen(true, "Can you find all my recurring subscriptions?")} />
+        <AiChip text="🤖 Unusual expenses" onClick={() => useAppStore.getState().setAIOpen(true, "Do I have any unusually large or weird expenses recently?")} />
       </div>
 
       <div className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5 mt-2">
@@ -100,14 +102,7 @@ export default function TransactionsPage() {
             >
               {filteredTxns.map((txn) => (
                 <motion.div variants={itemVariants} key={txn.id}>
-                  <TransactionItem 
-                    title={txn.title} 
-                    category={txn.category} 
-                    amount={`${txn.type === 'INCOME' ? '+' : '−'}₹${Math.abs(txn.amount).toLocaleString('en-IN')}`} 
-                    date={txn.date} 
-                    icon={txn.icon || "📝"}
-                    positive={txn.type === 'INCOME'}
-                  />
+                  <TransactionItem txn={txn} />
                 </motion.div>
               ))}
               
@@ -134,9 +129,10 @@ export default function TransactionsPage() {
   );
 }
 
-function AiChip({ text }: { text: string }) {
+function AiChip({ text, onClick }: { text: string; onClick?: () => void }) {
   return (
     <motion.button 
+      onClick={onClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       className="px-3 py-1.5 bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] border border-[rgba(79,70,229,0.25)] rounded-[20px] text-[12px] cursor-pointer"
@@ -146,28 +142,24 @@ function AiChip({ text }: { text: string }) {
   );
 }
 
-const getIcon = (name: string) => {
-  switch (name) {
-    case 'music': return "🎵";
-    case 'pizza': return "🍕";
-    case 'briefcase': return "💼";
-    case 'car': return "🚗";
-    case 'receipt': return "🧾";
-    default: return "📄";
-  }
-};
+function TransactionItem({ txn }: { txn: Transaction }) {
+  const { setAddModalOpen } = useAppStore();
+  const positive = txn.type === 'INCOME';
+  const amount = `${positive ? '+' : '−'}₹${Math.abs(txn.amount).toLocaleString('en-IN')}`;
 
-function TransactionItem({ title, category, amount, date, icon, positive = false }: { title: string, category: string, amount: string, date: string, icon: string, positive?: boolean }) {
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-surface-2)] -mx-2 px-2 rounded-lg transition-colors cursor-pointer">
+    <div 
+      onClick={() => setAddModalOpen(true, txn)}
+      className="flex items-center gap-3 py-2.5 border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-surface-2)] -mx-2 px-2 rounded-lg transition-colors cursor-pointer"
+    >
       <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[18px] shrink-0 bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] shadow-sm">
-        {getIcon(icon)}
+        {getIcon(txn.icon === 'receipt' ? txn.category : (txn.icon || txn.category), txn.type)}
       </div>
       <div className="flex-1">
-        <div className="text-[13px] font-medium text-[var(--color-text-main)]">{title}</div>
-        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{category} · {date}</div>
+        <div className="text-[13px] font-medium text-[var(--color-text-main)]">{txn.title}</div>
+        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{txn.category} · {formatDateReadable(txn.date)}</div>
       </div>
-      <div className={`font-mono text-[13px] font-bold ${positive ? 'text-[var(--color-secondary-main)]' : 'text-[var(--color-danger-main)]'}`}>
+      <div className={`font-mono text-[13px] font-bold ${positive ? 'text-emerald-500' : 'text-[var(--color-danger-main)]'}`}>
         {amount}
       </div>
     </div>

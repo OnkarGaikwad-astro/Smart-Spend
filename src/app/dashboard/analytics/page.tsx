@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, ArrowUpRight, Activity } from "lucide-react";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, ArrowUpRight, Activity, Download } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
@@ -32,18 +32,47 @@ export default function AnalyticsPage() {
       color: colors[i % colors.length]
     })).sort((a, b) => b.value - a.value);
 
-    const lData = [
-      { name: '1st', spent: totExp > 0 ? totExp * 0.1 : 0 },
-      { name: '5th', spent: totExp > 0 ? totExp * 0.3 : 0 },
-      { name: '10th', spent: totExp > 0 ? totExp * 0.2 : 0 },
-      { name: '15th', spent: totExp > 0 ? totExp * 0.4 : 0 },
-      { name: '20th', spent: totExp > 0 ? totExp * 0.15 : 0 },
-      { name: '25th', spent: totExp > 0 ? totExp * 0.25 : 0 },
-      { name: '30th', spent: totExp > 0 ? totExp * 0.35 : 0 },
-    ];
+    const last30Days = [...Array(30)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (29 - i));
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const timelineMap = new Map<string, number>();
+    last30Days.forEach(date => timelineMap.set(date, 0));
+
+    expenses.forEach(e => {
+      const dateStr = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (timelineMap.has(dateStr)) {
+        timelineMap.set(dateStr, timelineMap.get(dateStr)! + Math.abs(e.amount));
+      }
+    });
+
+    const lData = last30Days.map(date => ({
+      name: date,
+      spent: timelineMap.get(date) || 0
+    }));
 
     return { totalExpense: totExp, totalIncome: totInc, lineData: lData, pieData: pData };
   }, [transactions]);
+
+  const handleExportCSV = () => {
+    if (!transactions.length) return;
+    const headers = ['Date', 'Title', 'Category', 'Type', 'Amount'];
+    const csvContent = [
+      headers.join(','),
+      ...transactions.map(t => `${new Date(t.date).toISOString().split('T')[0]},"${t.title}","${t.category}",${t.type},${t.amount}`)
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -52,7 +81,7 @@ export default function AnalyticsPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as any, stiffness: 300, damping: 24 } }
   };
 
   // Generate heatmap data (randomized for demo)
@@ -76,6 +105,14 @@ export default function AnalyticsPage() {
           <button className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm">This Month</button>
           <button className="px-3 py-1.5 text-[12px] font-medium rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">Last Month</button>
         </motion.div>
+        <motion.button 
+          variants={itemVariants}
+          onClick={handleExportCSV}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)] shadow-sm transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export CSV
+        </motion.button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-3.5">
