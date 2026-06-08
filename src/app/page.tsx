@@ -65,6 +65,21 @@ export default function Home() {
           description="Your data is locked down with enterprise-grade Row Level Security and isolated user profiles."
         />
       </div>
+
+      {/* Footer / Developer Info */}
+      <footer className="w-full max-w-6xl z-10 border-t border-[var(--color-border-subtle)] pt-8 pb-12 mt-auto flex flex-col items-center justify-center text-center">
+        <p className="text-[15px] font-medium text-[var(--color-text-muted)]">
+          Designed and built with ❤️ by <span className="text-[var(--color-text-main)] font-bold">Onkar Gaikwad</span>.
+        </p>
+        <p className="text-[13px] text-[var(--color-text-muted)] mt-2 max-w-lg">
+          A personal finance tracker built to help college students manage their money effectively using the power of AI.
+        </p>
+        <div className="flex gap-4 mt-4 text-[13px] font-medium">
+          <a href="https://github.com/OnkarGaikwad-astro" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-muted)] hover:text-[var(--color-primary-main)] transition-colors">
+            GitHub Profile
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }
