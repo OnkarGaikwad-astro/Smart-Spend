@@ -68,10 +68,3 @@ SmartSpend AI acts as a native app on your mobile device!
 2. Open the browser menu and select **"Add to Home Screen"**.
 3. The app will install and function fully offline for viewing your cached dashboard and transaction logs!
 
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yourusername/smart-spend/issues).
-
-## 📝 License
-
-This project is open-source and available under the [MIT License](LICENSE).
