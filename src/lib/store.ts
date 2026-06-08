@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { createClient } from './supabase/client';
 
 export type Transaction = {
@@ -88,7 +89,9 @@ interface AppState {
   sweepLeftover: () => Promise<void>;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   userProfile: null,
   transactions: [],
   budgets: [],
@@ -367,4 +370,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       await state.depositToGoal(goal.id, sweepPerGoal);
     }
   }
-}));
+    }),
+    {
+      name: 'smartspend-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        transactions: state.transactions,
+        budgets: state.budgets,
+        goals: state.goals,
+        userProfile: state.userProfile,
+        theme: state.theme,
+      }),
+    }
+  )
+);
