@@ -133,14 +133,14 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
                 <button
                   type="button"
                   onClick={() => setType("EXPENSE")}
-                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "EXPENSE" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger-main)] shadow-sm" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"}`}
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "EXPENSE" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger-main)] shadow-sm" : "text-[var(--color-text-main)] opacity-70 hover:opacity-100"}`}
                 >
                   Expense
                 </button>
                 <button
                   type="button"
                   onClick={() => setType("INCOME")}
-                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "INCOME" ? "bg-[var(--color-secondary-soft)] text-[var(--color-secondary-main)] shadow-sm" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"}`}
+                  className={`flex-1 py-1.5 text-[13px] font-medium rounded-[8px] transition-all ${type === "INCOME" ? "bg-black text-white dark:bg-white dark:text-black shadow-sm" : "text-[var(--color-text-main)] opacity-70 hover:opacity-100"}`}
                 >
                   Income
                 </button>

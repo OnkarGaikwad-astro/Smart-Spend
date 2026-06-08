@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, PieChart as PieChartIcon, TrendingUp, ArrowUpRight, Activity, Download } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppStore } from "@/lib/store";
@@ -8,14 +8,30 @@ import { motion } from "framer-motion";
 
 export default function AnalyticsPage() {
   const { transactions, isLoading, fetchData } = useAppStore();
+  const [timeRange, setTimeRange] = useState<'this_month' | 'last_month'>('this_month');
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const { totalExpense, totalIncome, lineData, pieData } = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'EXPENSE');
-    const income = transactions.filter(t => t.type === 'INCOME');
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const filteredTransactions = transactions.filter(t => {
+      const d = new Date(t.date);
+      if (timeRange === 'this_month') {
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      } else {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+      }
+    });
+
+    const expenses = filteredTransactions.filter(t => t.type === 'EXPENSE');
+    const income = filteredTransactions.filter(t => t.type === 'INCOME');
     
     const totExp = expenses.reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
     const totInc = income.reduce((acc, curr) => acc + curr.amount, 0);
@@ -32,14 +48,27 @@ export default function AnalyticsPage() {
       color: colors[i % colors.length]
     })).sort((a, b) => b.value - a.value);
 
-    const last30Days = [...Array(30)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (29 - i));
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
+    const daysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate();
+    
+    let days: string[] = [];
+    if (timeRange === 'this_month') {
+      const numDays = daysInMonth(currentMonth, currentYear);
+      days = [...Array(numDays)].map((_, i) => {
+        const d = new Date(currentYear, currentMonth, i + 1);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+    } else {
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const numDays = daysInMonth(lastMonth, lastMonthYear);
+      days = [...Array(numDays)].map((_, i) => {
+        const d = new Date(lastMonthYear, lastMonth, i + 1);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+    }
 
     const timelineMap = new Map<string, number>();
-    last30Days.forEach(date => timelineMap.set(date, 0));
+    days.forEach(date => timelineMap.set(date, 0));
 
     expenses.forEach(e => {
       const dateStr = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -48,13 +77,13 @@ export default function AnalyticsPage() {
       }
     });
 
-    const lData = last30Days.map(date => ({
+    const lData = days.map(date => ({
       name: date,
       spent: timelineMap.get(date) || 0
     }));
 
     return { totalExpense: totExp, totalIncome: totInc, lineData: lData, pieData: pData };
-  }, [transactions]);
+  }, [transactions, timeRange]);
 
   const handleExportCSV = () => {
     if (!transactions.length) return;
@@ -102,8 +131,18 @@ export default function AnalyticsPage() {
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <motion.div variants={itemVariants} className="flex gap-1.5 p-1 bg-[var(--color-surface-2)] rounded-[10px]">
-          <button className="px-3 py-1.5 text-[12px] font-medium rounded-md bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm">This Month</button>
-          <button className="px-3 py-1.5 text-[12px] font-medium rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">Last Month</button>
+          <button 
+            onClick={() => setTimeRange('this_month')}
+            className={`px-3 py-1.5 text-[12px] font-medium rounded-md shadow-sm transition-colors ${timeRange === 'this_month' ? 'bg-[var(--color-surface)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          >
+            This Month
+          </button>
+          <button 
+            onClick={() => setTimeRange('last_month')}
+            className={`px-3 py-1.5 text-[12px] font-medium rounded-md shadow-sm transition-colors ${timeRange === 'last_month' ? 'bg-[var(--color-surface)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          >
+            Last Month
+          </button>
         </motion.div>
         <motion.button 
           variants={itemVariants}

@@ -78,17 +78,17 @@ export default function DashboardLayout({
             </button>
           </div>
         </div>
+
+        {/* Mobile Navigation (Top) */}
+        <div className="md:hidden flex overflow-x-auto px-4 py-2 gap-2 hide-scrollbar border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)]">
+            <Link href="/dashboard" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Overview</Link>
+            <Link href="/dashboard/transactions" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/transactions' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Transactions</Link>
+            <Link href="/dashboard/budget" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/budget' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Budget & Goals</Link>
+            <Link href="/dashboard/analytics" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/analytics' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Analytics</Link>
+        </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] z-40 pb-safe">
-        <div className="flex justify-around items-center h-16 px-2">
-          <MobileNavLink href="/dashboard" label="Overview" pathname={pathname} />
-          <MobileNavLink href="/dashboard/transactions" label="List" pathname={pathname} />
-          <MobileNavLink href="/dashboard/budget" label="Budgets" pathname={pathname} />
-          <MobileNavLink href="/dashboard/analytics" label="Analytics" pathname={pathname} />
-        </div>
-      </div>
+
 
       <main className="p-5 md:p-8 md:pt-10 max-w-6xl mx-auto pb-24 md:pb-12 min-h-[calc(100vh-64px)]">
         {children}
@@ -130,16 +130,4 @@ function NavTab({ href, label, active = false }: { href: string; label: string; 
   );
 }
 
-function MobileNavLink({ href, label, pathname }: { href: string; label: string; pathname: string }) {
-  const isActive = pathname === href;
-  return (
-    <Link 
-      href={href} 
-      className={`flex flex-col items-center justify-center w-full h-full text-[12px] font-medium transition-colors ${
-        isActive ? 'text-[var(--color-primary-main)]' : 'text-[var(--color-text-muted)]'
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
+

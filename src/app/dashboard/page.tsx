@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Wallet, Activity } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Plus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { formatDateReadable, getIcon } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { type Transaction } from "@/lib/store";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function DashboardPage() {
-  const { transactions, isLoading, fetchData } = useAppStore();
+  const { transactions, isLoading, fetchData, setAddModalOpen } = useAppStore();
 
   useEffect(() => {
     fetchData();
@@ -132,7 +132,15 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] p-4.5">
           <div className="flex justify-between items-center mb-3.5">
             <h2 className="text-[14px] font-semibold text-[var(--color-text-main)]">Recent transactions</h2>
-            <Link href="/dashboard/transactions" className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer">View all →</Link>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setAddModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary-main)] text-white border-none rounded-[8px] text-[12px] font-medium cursor-pointer transition-colors shadow-sm hover:opacity-90"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add
+              </button>
+              <Link href="/dashboard/transactions" className="text-[12px] text-[var(--color-primary-main)] font-medium cursor-pointer hover:underline">View all →</Link>
+            </div>
           </div>
           
           <div className="flex flex-col">

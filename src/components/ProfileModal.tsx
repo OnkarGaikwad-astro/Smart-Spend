@@ -33,7 +33,7 @@ export function ProfileModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 30 }}
           transition={{ type: "spring", bounce: 0.3, duration: 0.4 }}
-          className="bg-[var(--color-surface)] w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden relative border border-[var(--color-border-subtle)]"
+          className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden relative border border-gray-200 dark:border-slate-800"
         >
           {/* Header Graphic Background */}
           <div className="h-32 bg-gradient-to-br from-[var(--color-primary-main)] via-[var(--color-purple-main)] to-indigo-600 relative overflow-hidden">
@@ -51,7 +51,7 @@ export function ProfileModal() {
             {/* Floating Avatar */}
             <div className="relative -mt-14 mb-6 flex justify-center">
               <div className="relative">
-                <div className="w-28 h-28 rounded-full bg-[var(--color-surface)] p-1.5 shadow-xl">
+                <div className="w-28 h-28 rounded-full bg-white dark:bg-slate-900 p-1.5 shadow-xl">
                   <div className="w-full h-full rounded-full bg-gradient-to-br from-[var(--color-surface-2)] to-[var(--color-surface)] border border-[var(--color-border-subtle)] overflow-hidden flex items-center justify-center text-4xl font-bold text-[var(--color-primary-main)]">
                     {userProfile?.avatar_url ? (
                       <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
@@ -60,14 +60,11 @@ export function ProfileModal() {
                     )}
                   </div>
                 </div>
-                <div className="absolute bottom-1 right-1 w-8 h-8 bg-white border border-[var(--color-border-subtle)] rounded-full shadow-md flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary-main)] cursor-pointer transition-colors">
-                  <Camera className="w-4 h-4" />
-                </div>
               </div>
             </div>
 
             <div className="text-center mb-8">
-              <h2 className="text-[22px] font-extrabold text-[var(--color-text-main)] mb-1">
+              <h2 className="text-[22px] font-extrabold text-gray-900 dark:text-white mb-1">
                 {fullName || "User Profile"}
               </h2>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[12px] font-medium">
@@ -77,27 +74,27 @@ export function ProfileModal() {
 
             <div className="space-y-5">
               <div>
-                <label className="block text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 flex items-center gap-2">
+                <label className="block text-[13px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <User className="w-4 h-4" /> Full Name
                 </label>
                 <input 
                   type="text" 
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] rounded-[14px] text-[15px] font-medium text-[var(--color-text-main)] focus:outline-none focus:border-[var(--color-primary-main)] focus:ring-4 focus:ring-[var(--color-primary-soft)] transition-all"
+                  className="w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-[14px] text-[15px] font-medium text-gray-900 dark:text-white focus:outline-none focus:border-[var(--color-primary-main)] focus:ring-4 focus:ring-[var(--color-primary-soft)] transition-all"
                   placeholder="John Doe"
                 />
               </div>
               
               <div>
-                <label className="block text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 flex items-center gap-2">
+                <label className="block text-[13px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Mail className="w-4 h-4" /> Email Address
                 </label>
                 <input 
                   type="email" 
                   value={userProfile?.email || ""}
                   disabled
-                  className="w-full px-4 py-3.5 bg-[var(--color-surface-2)]/50 border border-[var(--color-border-subtle)] rounded-[14px] text-[15px] text-[var(--color-text-muted)] cursor-not-allowed"
+                  className="w-full px-4 py-3.5 bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 rounded-[14px] text-[15px] text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 />
               </div>
             </div>
@@ -106,7 +103,7 @@ export function ProfileModal() {
             <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] flex gap-3">
               <button 
                 onClick={() => setProfileModalOpen(false)}
-                className="flex-1 py-3.5 text-[14px] font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[14px] hover:bg-[var(--color-surface-2)] transition-colors"
+                className="flex-1 py-3.5 text-[14px] font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-[14px] hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
