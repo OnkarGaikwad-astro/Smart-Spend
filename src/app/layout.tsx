@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     shortcut: "/icon-192x192.png",
     apple: "/icon-192x192.png",
   },
-  
+
   keywords: [
     "SmartSpend",
     "AI Finance",
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     "Money Management",
     "Personal Finance",
     "Finance AI",
+    "Onkar Gaikwad",
   ],
 
   openGraph: {
