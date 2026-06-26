@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "SmartSpend AI",
   description: "AI-Powered Personal Finance Tracker for Students",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://smartspend.astronkar.in"),
 };
 
 export const viewport: Viewport = {
