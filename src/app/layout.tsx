@@ -7,10 +7,47 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "SmartSpend AI",
-  description: "AI-Powered Personal Finance Tracker for Students",
-  manifest: "/manifest.json",
   metadataBase: new URL("https://smartspend.astronkar.in"),
+
+  title: {
+    default: "SmartSpend AI",
+    template: "%s | SmartSpend AI",
+  },
+
+  description:
+    "AI-powered personal finance assistant for students. Track expenses, analyze spending, and receive intelligent financial insights.",
+
+  keywords: [
+    "SmartSpend",
+    "AI Finance",
+    "Expense Tracker",
+    "Budget Planner",
+    "Student Finance",
+    "Money Management",
+    "Personal Finance",
+    "Finance AI",
+  ],
+
+  openGraph: {
+    title: "SmartSpend AI",
+    description:
+      "AI-powered personal finance assistant for students.",
+    url: "https://smartspend.astronkar.in",
+    siteName: "SmartSpend AI",
+    locale: "en_US",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "SmartSpend AI",
+    description:
+      "AI-powered personal finance assistant for students.",
+  },
+
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export const viewport: Viewport = {
