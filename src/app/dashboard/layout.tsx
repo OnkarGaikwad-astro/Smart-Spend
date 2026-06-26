@@ -43,7 +43,7 @@ export default function DashboardLayout({
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-[10px] overflow-hidden shadow-sm border border-[var(--color-border-subtle)]">
-              <img src="/icon.png" alt="SmartSpend Logo" className="w-full h-full object-cover" />
+              <img src="/icon.png" alt="SmartSpend Logo" className="w-full h-full object-cover rounded-[10px]" />
             </div>
             <span className="font-semibold text-[17px] tracking-tight">SmartSpend</span>
           </div>
