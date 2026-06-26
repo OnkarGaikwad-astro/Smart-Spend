@@ -8,20 +8,33 @@ export default function Home() {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[var(--color-primary-soft)] rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob pointer-events-none" />
       <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-[var(--color-purple-soft)] rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-2000 pointer-events-none" />
       <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] bg-[var(--color-secondary-soft)] rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-4000 pointer-events-none" />
+      {/* Structured Data for Google Site Name */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "SmartSpend AI",
+            alternateName: "SmartSpend",
+            url: "https://smartspend.astronkar.in",
+          }),
+        }}
+      />
 
       {/* Hero Section */}
       <div className="max-w-5xl w-full text-center space-y-8 z-10 mt-12 md:mt-24 flex flex-col items-center">
-        <div className="inline-flex items-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface)] shadow-sm px-4 py-1.5 text-[13px] font-medium text-[var(--color-text-main)] transition-all hover:shadow-md">
+        <h1 className="inline-flex items-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface)] shadow-sm px-4 py-1.5 text-[13px] font-medium text-[var(--color-text-main)] transition-all hover:shadow-md">
           <Sparkles className="w-4 h-4 text-[var(--color-primary-main)] mr-2" />
           SmartSpend AI — The Future of Student Finance
-        </div>
+        </h1>
         
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[var(--color-text-main)] leading-[1.1]">
+        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[var(--color-text-main)] leading-[1.1]">
           Master your money, <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary-main)] to-[var(--color-purple-main)]">
             without the spreadsheet.
           </span>
-        </h1>
+        </h2>
         
         <p className="text-lg md:text-xl text-[var(--color-text-muted)] max-w-2xl mx-auto leading-relaxed">
           The most beautiful, intelligent personal finance tracker designed exclusively for college students. Track expenses, crush budgets, and let AI analyze your spending habits.

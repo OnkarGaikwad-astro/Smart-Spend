@@ -14,12 +14,14 @@ export const metadata: Metadata = {
     template: "%s | SmartSpend AI",
   },
 
+  applicationName: "SmartSpend AI",
+
   description:
     "AI-powered personal finance assistant for students. Track expenses, analyze spending, and receive intelligent financial insights.",
-icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+  icons: {
+    icon: "/icon-192x192.png", // Pointing to 192x192 as it's a multiple of 48px, which Google prefers
+    shortcut: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
   },
   
   keywords: [
