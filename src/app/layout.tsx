@@ -16,7 +16,12 @@ export const metadata: Metadata = {
 
   description:
     "AI-powered personal finance assistant for students. Track expenses, analyze spending, and receive intelligent financial insights.",
-
+icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
+  
   keywords: [
     "SmartSpend",
     "AI Finance",
