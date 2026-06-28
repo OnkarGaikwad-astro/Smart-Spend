@@ -18,14 +18,16 @@ export const metadata: Metadata = {
 
   description:
     "AI-powered personal finance assistant for students. Track expenses, analyze spending, and receive intelligent financial insights.",
-icons: {
-  icon: [
-    { url: "/favicon.ico", sizes: "any" },
-    { url: "/icon-192x192.png", type: "image/png", sizes: "192x192" },
-    { url: "/icon-512x512.png", type: "image/png", sizes: "512x512" },
-  ],
-  shortcut: "/favicon.ico",
-},
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192x192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512x512.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon-192x192.png",
+  },
 
   keywords: [
     "SmartSpend",
