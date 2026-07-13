@@ -42,8 +42,8 @@ export default function DashboardLayout({
       <nav className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] sticky top-0 z-40 backdrop-blur-md bg-opacity-80">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-[10px] overflow-hidden shadow-sm border border-[var(--color-border-subtle)]">
-              <img src="/icon.png" alt="SmartSpend Logo" className="w-full h-full object-cover rounded-[10px]" />
+            <div className="w-8 h-8 rounded-[14px] overflow-hidden shadow-sm border border-[var(--color-border-subtle)]">
+              <img src="/icon.png" alt="SmartSpend Logo" className="w-full h-full object-cover rounded-[14px]" />
             </div>
             <span className="font-semibold text-[17px] tracking-tight">SmartSpend</span>
           </div>
