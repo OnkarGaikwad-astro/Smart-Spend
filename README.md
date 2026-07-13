@@ -2,7 +2,7 @@
 
 ![SmartSpend AI Hero Banner](public/icon-512x512.png)
 
-> **Live Deployment:** [https://smart-spend-ten-blue.vercel.app](https://smart-spend-ten-blue.vercel.app)
+> **Live Deployment:** [https://smartspend.astronkar.in](https://smartspend.astronkar.in)
 
 **SmartSpend AI** is an intelligent, modern personal finance tracker built specifically for college students. It helps you manage your money, track your goals, and gain financial insights through an integrated AI assistant powered by Google Gemini.
 
@@ -10,7 +10,8 @@
 
 - **📊 Comprehensive Dashboard:** View your complete financial overview, total balance, income vs. expenses, and recent transactions at a glance.
 - **🤖 AI Financial Assistant:** Integrated Google Gemini AI to analyze your spending habits, answer financial questions, and suggest personalized budgeting strategies.
-- **📱 Installable PWA:** Fully installable on iOS and Android devices with offline caching support. Your dashboard and transaction logs load instantly, even without an internet connection.
+- **📸 AI Receipt & Bill Scanner:** Instantly upload receipts or payment screenshots (like PhonePe/GPay). Gemini AI automatically detects, extracts, and logs multiple transactions at once!
+- **📱 Installable PWA & Custom Branding:** Fully installable on iOS and Android devices with offline caching and a beautifully custom-designed 3D app icon. Your dashboard and transaction logs load instantly, even without an internet connection.
 - **💸 Budget & Goal Tracking:** Set monthly budgets by category and create long-term savings goals with progress tracking.
 - **📈 Advanced Analytics:** Visualize your spending patterns with interactive charts. Compare this month's spending against last month's.
 - **🌙 Beautiful UI/UX:** A stunning, highly-responsive interface with dark mode support, fluid micro-animations, and glassmorphic elements.
