@@ -1,0 +1,49 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Box Gradient -->
+    <linearGradient id="bgGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#447A9C" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#2A4B61" stop-opacity="0.95"/>
+    </linearGradient>
+    
+    <!-- Top Hook Gradient (Glassy) -->
+    <linearGradient id="topHook" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#95BEE8" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7DA2C8" stop-opacity="0.8"/>
+    </linearGradient>
+    
+    <!-- Bottom Hook Gradient (Glassy) -->
+    <linearGradient id="bottomHook" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#AED8F7" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#8DBEDE" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Drop Shadow for 3D effect -->
+    <filter id="shadow3d" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="5" stdDeviation="4" flood-color="#0B1115" flood-opacity="0.5"/>
+    </filter>
+    
+    <!-- Box Drop Shadow -->
+    <filter id="boxShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#2A4B61" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Glassy Background Square -->
+  <rect x="5" y="5" width="90" height="90" rx="28" fill="url(#bgGlass)" filter="url(#boxShadow)" />
+  <!-- White Glowing Border -->
+  <rect x="5" y="5" width="90" height="90" rx="28" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" />
+
+  <!-- 3D "S" Shape -->
+  <g filter="url(#shadow3d)">
+    <!-- Top Hook -->
+    <path d="M 65,42 L 35,42 A 16,16 0 0,1 35,10 L 65,10" fill="none" stroke="url(#topHook)" stroke-width="14" stroke-linecap="round" />
+    <!-- Top Hook Glass Highlight -->
+    <path d="M 65,42 L 35,42 A 16,16 0 0,1 35,10 L 65,10" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" transform="translate(0, -2)" />
+
+    <!-- Bottom Hook -->
+    <path d="M 35,58 L 65,58 A 16,16 0 0,1 65,90 L 35,90" fill="none" stroke="url(#bottomHook)" stroke-width="14" stroke-linecap="round" />
+    <!-- Bottom Hook Glass Highlight -->
+    <path d="M 35,58 L 65,58 A 16,16 0 0,1 65,90 L 35,90" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" transform="translate(0, -2)" />
+  </g>
+</svg>

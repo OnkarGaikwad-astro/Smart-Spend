@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Plus, Trash2, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 
@@ -18,6 +18,8 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [category, setCategory] = useState("Food");
   const [date, setDate] = useState(getLocalISODateTime());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,6 +90,66 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
     ? expenseCategories
     : ["Scholarship", "Parents", "Sister", "Friends", "Other"];
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        
+        const response = await fetch('/api/extract-receipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Data })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          const dataArray = Array.isArray(result) ? result : (result ? [result] : []);
+          
+          if (dataArray.length === 0) {
+            alert("No transactions found in the image.");
+          } else if (dataArray.length === 1) {
+            const data = dataArray[0];
+            setType("EXPENSE");
+            if (data.amount) setAmount(data.amount.toString());
+            if (data.title) setTitle(data.title);
+            if (data.category) setCategory(data.category);
+            if (data.date) setDate(data.date.slice(0, 16));
+          } else {
+            for (const data of dataArray) {
+              const parsedAmount = -Math.abs(parseFloat(data.amount || 0));
+              if (parsedAmount !== 0 && data.title) {
+                await addTransaction({
+                  title: data.title,
+                  amount: parsedAmount,
+                  type: "EXPENSE",
+                  category: data.category || "Other",
+                  date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
+                });
+              }
+            }
+            alert(`Successfully added ${dataArray.length} transactions!`);
+            onClose();
+          }
+        } else {
+          const err = await response.json();
+          alert(err.error || "Failed to parse receipt.");
+        }
+        setIsScanning(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error scanning receipt", error);
+      setIsScanning(false);
+      alert("Error scanning receipt.");
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -128,6 +190,31 @@ export function AddTransactionModal({ isOpen, onClose }: { isOpen: boolean; onCl
             
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               
+              {!editingTransaction && (
+                <div className="mb-4">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleImageUpload} 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanning}
+                    className="w-full py-2.5 flex items-center justify-center gap-2 bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] border border-dashed border-[var(--color-primary-main)] rounded-[10px] text-[13px] font-medium hover:bg-[var(--color-primary-main)] hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    {isScanning ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
+                    {isScanning ? "Scanning Receipt..." : "Scan Receipt"}
+                  </button>
+                </div>
+              )}
+
               {/* Type Toggle */}
               <div className="flex gap-2 p-1 bg-[var(--color-surface-2)] rounded-[12px]">
                 <button

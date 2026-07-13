@@ -1,0 +1,10 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="auraG" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#447A9C"/>
+      <stop offset="100%" stop-color="#8DBEDE"/>
+    </linearGradient>
+  </defs>
+  <path d="M 20,60 Q 20,20 60,20" fill="none" stroke="url(#auraG)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 80,40 Q 80,80 40,80" fill="none" stroke="url(#auraG)" stroke-width="18" stroke-linecap="round" opacity="0.6"/>
+</svg>
