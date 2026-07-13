@@ -1,7 +1,6 @@
 # 🚀 SmartSpend AI
 
 ![SmartSpend AI Hero Banner](public/icon-512x512.png)
-
 > **Live Deployment:** [https://smartspend.astronkar.in](https://smartspend.astronkar.in)
 
 **SmartSpend AI** is an intelligent, modern personal finance tracker built specifically for college students. It helps you manage your money, track your goals, and gain financial insights through an integrated AI assistant powered by Google Gemini.
@@ -36,7 +35,7 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/smart-spend.git
+   git clone https://github.com/OnkarGaikwad-astro/smart-spend.git
    cd smart-spend
    ```
 
@@ -65,7 +64,7 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
 SmartSpend AI acts as a native app on your mobile device! 
 
-1. Navigate to the **Live Deployment URL** (https://smart-spend-ten-blue.vercel.app) on your Android or iOS browser (Chrome/Safari).
+1. Navigate to the **Live Deployment URL** (https://smartspend.astronkar.in) on your Android or iOS browser (Chrome/Safari).
 2. Open the browser menu and select **"Add to Home Screen"**.
 3. The app will install and function fully offline for viewing your cached dashboard and transaction logs!
 
