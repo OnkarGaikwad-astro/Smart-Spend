@@ -1,56 +1,78 @@
-<div align="center">
-
-<img src="public/icon-512x512.png" alt="SmartSpend AI Logo" width="120" />
-
 # SmartSpend AI
 
-### AI-powered personal finance tracking built for students.
+**AI-powered personal finance tracking built for students.**
 
-Track expenses, manage budgets, build savings goals, scan receipts and understand your spending with AI.
+SmartSpend is a full-stack Progressive Web App for tracking expenses, managing budgets, setting savings goals, and understanding spending patterns with AI-assisted insights.
 
-<br/>
+🌐 **[Live Demo](https://smartspend.astronkar.in)**  
+💻 **[GitHub](https://github.com/OnkarGaikwad-astro/Smart-Spend)**
 
-### 🌐 [Launch SmartSpend →](https://smartspend.astronkar.in)
-
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/OnkarGaikwad-astro/Smart-Spend)
-[![Live](https://img.shields.io/badge/Live-smartspend.astronkar.in-22c55e?style=for-the-badge)](https://smartspend.astronkar.in)
-[![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8?style=for-the-badge&logo=pwa)](https://smartspend.astronkar.in)
-
-<br/>
-
-**Next.js 16 · React 19 · TypeScript · Supabase · PostgreSQL · Gemini · Zustand · Tailwind CSS**
-
-</div>
+**Next.js 16 · React 19 · TypeScript · Supabase · PostgreSQL · Gemini · Zustand · PWA**
 
 ---
 
-## 💡 What is SmartSpend?
+## Overview
 
-Keeping track of money sounds simple until dozens of small expenses start adding up.
+Managing everyday expenses can become difficult when transactions are spread across food, travel, subscriptions, UPI payments, and other small purchases.
 
-SmartSpend is a personal finance application designed around that problem, particularly for students managing monthly allowances, everyday UPI payments, subscriptions, food expenses and savings goals.
-
-Instead of being only a place to record transactions, SmartSpend connects your financial data across:
+SmartSpend brings these workflows into one application:
 
 ```text
-Transactions → Budgets → Analytics → Goals → AI Insights
+Transactions
+     ↓
+Budgets & Goals
+     ↓
+Financial Analytics
+     ↓
+AI-assisted Insights
 ```
 
-It also uses **Google Gemini** to reduce one of the most annoying parts of expense tracking: manual entry.
-
-Upload a receipt or payment screenshot and SmartSpend can extract the transaction information for you.
+The application combines **deterministic financial logic** with AI where language understanding is useful. Financial records, balances, budgets, and ownership remain structured and database-backed rather than being calculated by an LLM.
 
 ---
 
-## ✨ Highlights
+## Key Features
 
-### 📊 One Dashboard for Your Finances
+### 💳 Expense & Income Tracking
 
-Get a quick overview of your current balance, income, expenses, recent transactions and spending activity without digging through multiple pages.
+- Record income and expenses
+- Categorize transactions
+- Track current balance
+- View recent financial activity
+- Manage transactions through a unified dashboard
 
-### 🤖 AI Financial Assistant
+### 💰 Budget Management
 
-Ask questions about your finances using natural language.
+- Create category-based monthly budgets
+- Track budget utilisation from actual transactions
+- Compare spending against configured limits
+
+### 🎯 Savings Goals
+
+- Create savings targets
+- Track progress toward individual goals
+- Connect financial activity with long-term targets
+
+### 📊 Financial Analytics
+
+- Category-based spending breakdowns
+- Timeline-based expense trends
+- Income and expense summaries
+- Visual analysis of spending behaviour
+
+### 🤖 Gemini-Powered AI Features
+
+SmartSpend integrates Google Gemini for tasks where natural-language understanding is useful.
+
+Examples include:
+
+- AI-assisted spending analysis
+- Financial questions using natural language
+- Budgeting recommendations
+- Transaction insights
+- Receipt and payment screenshot extraction
+
+Example queries:
 
 ```text
 "Where did I spend the most this month?"
@@ -60,191 +82,172 @@ Ask questions about your finances using natural language.
 "How can I reduce my expenses?"
 ```
 
-SmartSpend combines your financial context with Gemini to provide more useful and personalised answers.
+### 📸 Receipt & Payment Scanner
 
-### 📸 AI Receipt & Payment Scanner
-
-Upload receipts, bills or payment screenshots from services such as UPI apps.
-
-SmartSpend uses Gemini to extract useful transaction information such as:
+Users can upload receipts, bills, or payment screenshots.
 
 ```text
 Receipt / Screenshot
-        │
-        ▼
+        ↓
    Gemini Analysis
-        │
-        ▼
- ┌───────────────┐
- │ Amount        │
- │ Merchant      │
- │ Date          │
- │ Category      │
- └───────┬───────┘
-         │
-         ▼
-   Transaction
+        ↓
+ ┌─────────────────┐
+ │ Amount          │
+ │ Merchant        │
+ │ Date            │
+ │ Category        │
+ └────────┬────────┘
+          ↓
+     Transaction
 ```
 
-This significantly reduces repetitive manual transaction entry.
+This reduces repetitive manual transaction entry.
 
-### 💸 Smart Budget Tracking
+### 📱 Progressive Web App
 
-Create monthly budgets for categories such as food, travel or entertainment.
+SmartSpend is installable as a PWA and provides an app-like experience directly from a browser.
 
-Budget utilisation is calculated from your actual transactions instead of maintaining a separate manually entered "spent" value.
-
-### 🎯 Savings Goals
-
-Create goals for things you are saving towards and track your progress over time.
-
-### 📈 Financial Analytics
-
-Explore spending using interactive visualisations including category breakdowns and timeline-based expense trends.
-
-### 📱 Installable PWA
-
-SmartSpend is built as a Progressive Web App, giving it an app-like experience without requiring a separate mobile application.
-
-Install it directly from a supported browser and access cached application resources even with limited connectivity.
-
-### 🔐 Private by Design
-
-Authentication is powered by Supabase, while PostgreSQL **Row Level Security (RLS)** protects user-owned financial records.
-
-A user's transactions, budgets and goals are associated with their authenticated identity and database policies enforce ownership.
+The application uses cached resources to remain accessible during limited connectivity. Features requiring Supabase or Gemini still require a network connection.
 
 ---
 
-## 🧭 Explore SmartSpend
-
-| Section | Purpose |
-| --- | --- |
-| 🏠 **Dashboard** | Overall financial health and recent activity |
-| 💳 **Transactions** | Add and manage income and expenses |
-| 💸 **Budgets** | Set category-wise monthly spending limits |
-| 📈 **Analytics** | Explore spending patterns and trends |
-| 🎯 **Goals** | Track savings targets |
-| 🤖 **AI Assistant** | Ask questions about your financial data |
-| 📸 **Scanner** | Extract transactions from receipts and screenshots |
-
----
-
-## 🏗️ Architecture
+## Architecture
 
 ```text
-                         ┌─────────────────┐
-                         │      User       │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                    ┌─────────────────────────┐
-                    │      SmartSpend PWA     │
-                    │                         │
-                    │ Next.js + React + TS    │
-                    └────────────┬────────────┘
-                                 │
-               ┌─────────────────┼─────────────────┐
-               │                 │                 │
-               ▼                 ▼                 ▼
-       ┌──────────────┐   ┌──────────────┐  ┌──────────────┐
-       │   Zustand    │   │   Supabase   │  │    Gemini    │
-       │              │   │              │  │              │
-       │ Client State │   │ Auth + DB    │  │ AI Features  │
-       └──────────────┘   └──────┬───────┘  └──────────────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │  PostgreSQL   │
-                         │     + RLS     │
-                         └───────┬───────┘
-                                 │
-                    ┌────────────┼────────────┐
-                    ▼            ▼            ▼
-              Transactions    Budgets       Goals
+                         ┌──────────────┐
+                         │     User     │
+                         └──────┬───────┘
+                                │
+                                ▼
+                    ┌─────────────────────┐
+                    │   SmartSpend PWA    │
+                    │ Next.js + React + TS│
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+       ┌────────────┐   ┌────────────┐   ┌────────────┐
+       │  Zustand   │   │  Supabase  │   │   Gemini   │
+       │    State   │   │ Auth + API │   │     AI     │
+       └────────────┘   └──────┬─────┘   └────────────┘
+                               │
+                               ▼
+                       ┌──────────────┐
+                       │  PostgreSQL  │
+                       │     + RLS    │
+                       └──────┬───────┘
+                              │
+                  ┌───────────┼───────────┐
+                  ▼           ▼           ▼
+             Transactions  Budgets      Goals
 ```
 
 ### Design principle
 
 > **Structured data for truth. Deterministic code for calculations. AI for interpretation.**
 
-Gemini handles tasks where AI is useful, such as understanding receipts and natural-language questions.
-
-Financial records, ownership, balances and budget calculations remain structured and deterministic.
+This separation keeps financial calculations predictable while allowing Gemini to handle tasks such as natural-language analysis and information extraction.
 
 ---
 
-## 🛠️ Tech Stack
+## Authentication & Data Security
 
-| Category | Technology |
-| --- | --- |
-| **Framework** | Next.js 16 |
-| **Frontend** | React 19 + TypeScript |
-| **Styling** | Tailwind CSS 4 |
-| **Database** | PostgreSQL |
-| **Backend** | Supabase |
-| **Authentication** | Supabase Auth + Google OAuth |
-| **AI** | Google Gemini |
-| **State Management** | Zustand |
-| **Charts** | Recharts |
-| **Animations** | Framer Motion |
-| **Icons** | Lucide React |
-| **PWA** | next-pwa |
-| **Deployment** | Vercel |
+Authentication is handled through **Supabase Auth**.
 
----
-
-## 🔐 Authentication & Data Security
-
-SmartSpend was designed as a multi-user application rather than a shared financial dashboard.
+Financial records are protected using **PostgreSQL Row-Level Security (RLS)**.
 
 ```text
-                  User
-                   │
-                   ▼
-          Supabase Authentication
-                   │
-                   ▼
-           Authenticated Session
-                   │
-                   ▼
-             SmartSpend
-                   │
-                   ▼
-          PostgreSQL + RLS
-                   │
-                   ▼
-       Only user-owned records
+User
+ │
+ ▼
+Supabase Auth
+ │
+ ▼
+Authenticated Session
+ │
+ ▼
+SmartSpend
+ │
+ ▼
+PostgreSQL + RLS
+ │
+ ▼
+User-owned records
 ```
 
-Every private financial record is associated with its owner.
-
-PostgreSQL Row Level Security adds protection at the database level instead of relying only on frontend filtering.
+Database policies enforce ownership at the database layer rather than relying only on frontend filtering.
 
 Conceptually:
 
-```sql
+```text
 auth.uid() = user_id
 ```
 
-This protects transactions, budgets and goals from being accessed by another authenticated user.
+This applies to user-owned financial data such as transactions, budgets, and savings goals.
 
 ---
 
-## 🚀 Getting Started
+## Tech Stack
+
+| Category | Technologies |
+|---|---|
+| Framework | Next.js 16 |
+| Frontend | React 19, TypeScript |
+| Styling | Tailwind CSS |
+| Database | PostgreSQL |
+| Backend | Supabase |
+| Authentication | Supabase Auth, Google OAuth |
+| AI | Google Gemini |
+| State Management | Zustand |
+| Charts | Recharts |
+| Animations | Framer Motion |
+| PWA | next-pwa |
+| Deployment | Vercel |
+
+---
+
+## Project Structure
+
+```text
+Smart-Spend/
+├── public/
+│   └── icons/
+│
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   │   ├── analytics/
+│   │   │   ├── budget/
+│   │   │   ├── goals/
+│   │   │   └── transactions/
+│   │   └── login/
+│   │
+│   ├── components/
+│   └── lib/
+│       ├── supabase/
+│       └── store.ts
+│
+├── supabase-schema.sql
+├── WRITEUP.md
+├── package.json
+└── README.md
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-Make sure you have installed:
-
 - Node.js 20+
 - npm
-- A Supabase project
-- A Google Gemini API key
+- Supabase project
+- Google Gemini API key
 
----
-
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/OnkarGaikwad-astro/Smart-Spend.git
@@ -259,41 +262,31 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env.local` file in the project root:
+Create `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-> [!IMPORTANT]
-> Use the Supabase **project base URL**, for example:
->
-> ```text
-> https://your-project.supabase.co
-> ```
->
-> Do not append `/rest/v1/` when using the Supabase JavaScript client.
+Do not commit real credentials to the repository.
 
-### 4. Configure the database
+### 4. Configure Supabase
 
-The repository contains the SQL required to initialise the Supabase database.
-
-Run the relevant SQL setup scripts from the repository using:
+Run the SQL setup scripts from the repository through:
 
 **Supabase Dashboard → SQL Editor**
 
-This creates the required tables and security policies.
+This creates the required database structures and security policies.
 
-### 5. Start the development server
+### 5. Start development server
 
 ```bash
 npm run dev
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:3000
@@ -301,198 +294,105 @@ http://localhost:3000
 
 ---
 
-## 🔑 Google Authentication
+## Development Journey
 
-SmartSpend supports Google OAuth through Supabase.
-
-To enable it locally:
-
-1. Create a Google OAuth application in Google Cloud.
-2. Configure the authorised redirect URI.
-3. Enable the Google provider in Supabase Authentication.
-4. Add the Google Client ID and Client Secret to the Supabase provider configuration.
-5. Add your local and production URLs to the allowed redirect URLs.
-
-The authentication flow is:
-
-```text
-SmartSpend
-    │
-    ▼
-Supabase Auth
-    │
-    ▼
-Google OAuth
-    │
-    ▼
-Auth Callback
-    │
-    ▼
-SmartSpend Session
-```
-
----
-
-## 📱 Install SmartSpend
-
-You can use SmartSpend directly from your browser or install it as a PWA.
-
-### Android / Chrome
-
-1. Open **https://smartspend.astronkar.in**
-2. Open the browser menu.
-3. Select **Install app** or **Add to Home Screen**.
-4. Launch SmartSpend from your home screen.
-
-### iPhone / Safari
-
-1. Open the live application in Safari.
-2. Tap **Share**.
-3. Select **Add to Home Screen**.
-4. Confirm the installation.
-
-> [!NOTE]
-> Features that require the backend or Gemini still require a network connection. Cached application resources can remain available offline depending on what has previously been loaded.
-
----
-
-## 📂 Project Structure
-
-```text
-Smart-Spend/
-│
-├── public/
-│   ├── icons/
-│   └── ...
-│
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── ...
-│   │   │
-│   │   ├── auth/
-│   │   │   └── callback/
-│   │   │
-│   │   ├── dashboard/
-│   │   │   ├── analytics/
-│   │   │   ├── budget/
-│   │   │   ├── goals/
-│   │   │   └── transactions/
-│   │   │
-│   │   ├── login/
-│   │   └── ...
-│   │
-│   ├── components/
-│   │
-│   └── lib/
-│       ├── supabase/
-│       └── store.ts
-│
-├── supabase-schema.sql
-├── WRITEUP.md
-├── package.json
-└── README.md
-```
-
----
-
-## 🧪 Development Journey
-
-SmartSpend wasn't built as a finished architecture from day one.
-
-It evolved through several stages:
+SmartSpend evolved incrementally rather than starting with the final architecture.
 
 ```text
 Static UI
-    ↓
+   ↓
 Mock financial data
-    ↓
+   ↓
 Real transaction state
-    ↓
+   ↓
 Supabase persistence
-    ↓
+   ↓
 Authentication
-    ↓
-Per-user RLS security
-    ↓
-Dynamic budgets & analytics
-    ↓
-Gemini assistant
-    ↓
+   ↓
+Per-user RLS
+   ↓
+Budgets & analytics
+   ↓
+Gemini integration
+   ↓
 Receipt / screenshot extraction
-    ↓
-PWA + production deployment
+   ↓
+PWA deployment
 ```
 
-That progression exposed several real engineering problems, including authentication and OAuth configuration, Next.js/PWA compatibility, Supabase environment configuration, user-data isolation and deriving budgets from transaction data.
+Some of the main engineering challenges involved:
 
-For the detailed engineering decisions, challenges and lessons from building the project:
-
-### 📖 [Read the Technical Write-up →](./WRITEUP.md)
-
----
-
-## 🗺️ What's Next?
-
-Some directions I would like to explore further:
-
-- [ ] Automatic transaction import
-- [ ] AI extraction confidence scores
-- [ ] Better receipt/screenshot evaluation dataset
-- [ ] Proactive spending insights
-- [ ] Budget threshold notifications
-- [ ] Recurring payment detection
-- [ ] Improved offline transaction synchronisation
-- [ ] Comprehensive unit and end-to-end testing
-- [ ] More advanced monthly financial reports
+- Authentication and OAuth configuration
+- Supabase environment configuration
+- Per-user database security
+- Keeping financial calculations deterministic
+- PWA behaviour and cached resources
+- Connecting AI-generated information to structured application data
 
 ---
 
-## 🤝 Contributing
+## Engineering Approach
 
-Contributions, bug reports and suggestions are welcome.
+A core design decision was to avoid using an LLM for calculations that should be deterministic.
 
-If you want to contribute:
+For example:
 
-```bash
-# Fork the repository
-
-git checkout -b feature/your-feature
-
-# Make your changes
-
-git commit -m "feat: add your feature"
-
-git push origin feature/your-feature
+```text
+Financial records
+      ↓
+PostgreSQL
+      ↓
+Application logic
+      ↓
+Exact calculations
 ```
 
-Then open a Pull Request describing what you changed and why.
+while:
+
+```text
+User question / receipt
+        ↓
+      Gemini
+        ↓
+Interpretation / extraction
+        ↓
+Structured application data
+```
+
+This keeps the AI layer useful without making it the source of truth for financial state.
 
 ---
 
-## 📄 Technical Documentation
+## Future Improvements
 
-Want to know why SmartSpend uses PostgreSQL RLS, how budgets are calculated from transactions, what broke during development, or why AI isn't used for financial calculations?
-
-### → [Read `WRITEUP.md`](./WRITEUP.md)
+- Automatic transaction import
+- AI extraction confidence scores
+- Improved receipt/screenshot evaluation
+- Proactive spending insights
+- Budget threshold notifications
+- Recurring payment detection
+- Improved offline transaction synchronisation
+- More comprehensive automated testing
+- Advanced monthly financial reports
 
 ---
 
-<div align="center">
+## Documentation
 
-## 💸 SmartSpend AI
+For a deeper look at the architecture, engineering decisions, and development challenges:
 
-### Know where your money goes before wondering where it went.
+**[Read the Technical Write-up](WRITEUP.md)**
 
-<br/>
+---
 
-### **[🌐 Launch SmartSpend](https://smartspend.astronkar.in)**
+## License
 
-[GitHub](https://github.com/OnkarGaikwad-astro/Smart-Spend) •
-[Technical Write-up](./WRITEUP.md)
+This project is licensed under the MIT License.
 
-<br/>
+---
 
-Built by **Onkar Gaikwad**
+## Author
 
-</div>
+**Onkar Gaikwad**
+
+[GitHub](https://github.com/OnkarGaikwad-astro) · [Portfolio](https://portfolio.astronkar.in)
