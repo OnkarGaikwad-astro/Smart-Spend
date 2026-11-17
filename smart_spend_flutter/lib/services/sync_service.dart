@@ -202,7 +202,19 @@ class SyncService {
             .maybeSingle();
 
         if (profileRes != null) {
-          final profile = UserProfileModel.fromMap(profileRes);
+          final sessionAvatar = user.userMetadata?['avatar_url']?.toString() ??
+              user.userMetadata?['picture']?.toString();
+          final cached = _storage.getUserProfile();
+          final profile = UserProfileModel(
+            id: profileRes['id']?.toString() ?? user.id,
+            email: profileRes['email']?.toString() ?? user.email ?? '',
+            fullName: profileRes['full_name']?.toString() ??
+                user.userMetadata?['full_name']?.toString() ??
+                cached?.fullName,
+            avatarUrl: profileRes['avatar_url']?.toString() ??
+                sessionAvatar ??
+                cached?.avatarUrl,
+          );
           await _storage.saveUserProfile(profile);
         }
       } catch (e) {

@@ -128,25 +128,25 @@ class AppTheme {
     textMuted: Color(0xFF5C7F9B), // Muted Slate
   );
 
-  // Dark Palette
+  // Vibrant, High-Contrast Modern Dark Palette
   static const AppColors darkColors = AppColors(
-    background: Color(0xFF0B1115),
-    primary: Color(0xFF6CA5CA),
-    primarySoft: Color(0x266CA5CA),
-    secondary: Color(0xFF95BEE8),
-    secondarySoft: Color(0x2695BEE8),
-    accent: Color(0xFFAED8F7),
-    accentSoft: Color(0x26AED8F7),
-    danger: Color(0xFFF87171),
-    dangerSoft: Color(0x26F87171),
-    success: Color(0xFF34D399),
-    successSoft: Color(0x2634D399),
-    purple: Color(0xFF95BEE8),
-    surface: Color(0xFF14232D),
-    surface2: Color(0xFF1E3241),
-    borderSubtle: Color(0xFF325064),
-    textMain: Color(0xFFE2EEF8),
-    textMuted: Color(0xFF8AAEC9),
+    background: Color(0xFF0A0F1D), // Deep Cosmic Obsidian
+    primary: Color(0xFF38BDF8), // Electric Vivid Sky Blue
+    primarySoft: Color(0x2638BDF8),
+    secondary: Color(0xFF818CF8), // Radiant Indigo
+    secondarySoft: Color(0x26818CF8),
+    accent: Color(0xFF2DD4BF), // Glowing Neon Mint
+    accentSoft: Color(0x262DD4BF),
+    danger: Color(0xFFF43F5E), // Vibrant Crimson Rose
+    dangerSoft: Color(0x26F43F5E),
+    success: Color(0xFF10B981), // Crisp Emerald Green
+    successSoft: Color(0x2610B981),
+    purple: Color(0xFFA855F7), // Electric Lilac
+    surface: Color(0xFF11192C), // Deep Midnight Card Surface
+    surface2: Color(0xFF1B253D), // Elevated Card / Chip
+    borderSubtle: Color(0xFF283553), // Modern Hairline Border
+    textMain: Color(0xFFF8FAFC), // Pure Crisp White
+    textMuted: Color(0xFF94A3B8), // Sleek Slate 400
   );
 
   static AppColors of(BuildContext context) {
@@ -156,10 +156,26 @@ class AppTheme {
             : lightColors);
   }
 
+  /// Specialized brand font styling for 'SmartSpend' with Moirai One
+  static TextStyle brandStyle({
+    double fontSize = 20,
+    FontWeight fontWeight = FontWeight.w900,
+    Color? color,
+    double letterSpacing = -0.5,
+  }) {
+    return GoogleFonts.moiraiOne(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+    );
+  }
+
   static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.interTextTheme();
+    final baseTextTheme = GoogleFonts.josefinSansTextTheme();
     return ThemeData(
       brightness: Brightness.light,
+      fontFamily: GoogleFonts.josefinSans().fontFamily,
       scaffoldBackgroundColor: lightColors.background,
       primaryColor: lightColors.primary,
       colorScheme: ColorScheme.light(
@@ -176,7 +192,7 @@ class AppTheme {
         backgroundColor: lightColors.surface.withValues(alpha: 0.9),
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.josefinSans(
           fontSize: 18,
           fontWeight: FontWeight.w700,
           color: lightColors.textMain,
@@ -215,9 +231,10 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final baseTextTheme = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
+    final baseTextTheme = GoogleFonts.josefinSansTextTheme(ThemeData.dark().textTheme);
     return ThemeData(
       brightness: Brightness.dark,
+      fontFamily: GoogleFonts.josefinSans().fontFamily,
       scaffoldBackgroundColor: darkColors.background,
       primaryColor: darkColors.primary,
       colorScheme: ColorScheme.dark(
@@ -234,7 +251,7 @@ class AppTheme {
         backgroundColor: darkColors.surface.withValues(alpha: 0.9),
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.josefinSans(
           fontSize: 18,
           fontWeight: FontWeight.w700,
           color: darkColors.textMain,

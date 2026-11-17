@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import 'user_avatar.dart';
 
 class ProfileDialog extends StatefulWidget {
   const ProfileDialog({super.key});
@@ -49,10 +50,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
     final colors = AppTheme.of(context);
     final appProvider = context.watch<AppProvider>();
     final authProvider = context.watch<AuthProvider>();
-    final profile = appProvider.userProfile;
-
+    final profile = appProvider.userProfile ?? authProvider.userProfile;
     final email = profile?.email ?? authProvider.currentUser?.email ?? 'user@smartspend.app';
     final initials = profile?.initials ?? 'U';
+    final avatarUrl = profile?.avatarUrl ??
+        authProvider.currentUser?.userMetadata?['avatar_url']?.toString() ??
+        authProvider.currentUser?.userMetadata?['picture']?.toString();
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -118,23 +121,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       ),
                     ],
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [colors.surface2, colors.surface],
-                      ),
-                      border: Border.all(color: colors.borderSubtle),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: colors.primary,
-                      ),
-                    ),
+                  child: UserAvatar(
+                    avatarUrl: avatarUrl,
+                    initials: initials,
+                    size: 80,
+                    borderWidth: 1.5,
+                    borderColor: colors.borderSubtle,
                   ),
                 ),
               ),

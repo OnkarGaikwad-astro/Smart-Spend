@@ -8,6 +8,7 @@ import '../../widgets/add_transaction_dialog.dart';
 import '../../widgets/ai_assistant_sheet.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/profile_dialog.dart';
+import '../../widgets/user_avatar.dart';
 import '../auth/login_screen.dart';
 import 'analytics_tab.dart';
 import 'budget_tab.dart';
@@ -73,9 +74,11 @@ class _DashboardShellState extends State<DashboardShell> {
       });
     }
 
-    final initials = appProvider.userProfile?.initials ??
-        authProvider.userProfile?.initials ??
-        'U';
+    final profile = appProvider.userProfile ?? authProvider.userProfile;
+    final initials = profile?.initials ?? 'U';
+    final avatarUrl = profile?.avatarUrl ??
+        authProvider.currentUser?.userMetadata?['avatar_url']?.toString() ??
+        authProvider.currentUser?.userMetadata?['picture']?.toString();
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -104,66 +107,35 @@ class _DashboardShellState extends State<DashboardShell> {
             const SizedBox(width: 10),
             Text(
               'SmartSpend',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+              style: AppTheme.brandStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
                 color: colors.textMain,
               ),
             ),
           ],
         ),
         actions: [
-          // Sync / Offline Icon Indicator
+          // Aurex AI Assistant Button in AppBar
           IconButton(
-            tooltip: appProvider.isOnline
-                ? (appProvider.pendingSyncCount > 0
-                    ? '${appProvider.pendingSyncCount} changes pending sync'
-                    : 'Synced with database')
-                : 'Offline mode (${appProvider.pendingSyncCount} queued)',
-            onPressed: () {
-              if (appProvider.isOnline) {
-                appProvider.fetchData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Syncing with Supabase...'), duration: Duration(seconds: 1)),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'App is currently offline. ${appProvider.pendingSyncCount} changes will automatically sync when back online.',
-                    ),
-                  ),
-                );
-              }
-            },
-            icon: appProvider.isSyncing
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-                    ),
-                  )
-                : Badge(
-                    isLabelVisible: appProvider.pendingSyncCount > 0,
-                    label: Text('${appProvider.pendingSyncCount}'),
-                    backgroundColor:
-                        appProvider.isOnline ? colors.accent : colors.danger,
-                    child: Icon(
-                      appProvider.isOnline
-                          ? (appProvider.pendingSyncCount > 0
-                              ? Icons.cloud_upload_rounded
-                              : Icons.cloud_done_rounded)
-                          : Icons.cloud_off_rounded,
-                      color: appProvider.isOnline
-                          ? (appProvider.pendingSyncCount > 0
-                              ? colors.accent
-                              : colors.success)
-                          : colors.danger,
-                      size: 22,
-                    ),
-                  ),
+            tooltip: 'Aurex AI Assistant',
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: colors.primary,
+                size: 18,
+              ),
+            ),
+            onPressed: _openAIAssistant,
           ),
 
           // Theme Toggle Button
@@ -185,23 +157,12 @@ class _DashboardShellState extends State<DashboardShell> {
             child: InkWell(
               onTap: _openProfile,
               borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.surface2,
-                  border: Border.all(color: colors.borderSubtle, width: 1),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: colors.primary,
-                  ),
-                ),
+              child: UserAvatar(
+                avatarUrl: avatarUrl,
+                initials: initials,
+                size: 34,
+                borderWidth: 1.5,
+                borderColor: colors.borderSubtle,
               ),
             ),
           ),
@@ -227,43 +188,17 @@ class _DashboardShellState extends State<DashboardShell> {
           ),
         ],
       ),
-      // Two Floating Action Buttons: AI Assistant & Add Transaction
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // Aurex AI Button
-            FloatingActionButton.small(
-              heroTag: 'ai_assistant_fab',
-              onPressed: _openAIAssistant,
-              backgroundColor: colors.surface,
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: colors.borderSubtle, width: 1.2),
-              ),
-              child: Icon(
-                Icons.auto_awesome_rounded,
-                color: colors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Add Transaction FAB
-            FloatingActionButton(
-              heroTag: 'add_transaction_fab',
-              onPressed: _openAddTransaction,
-              backgroundColor: colors.primary,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Icon(Icons.add_rounded, size: 28),
-            ),
-          ],
+      // Single Clean Add Transaction FAB
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'add_transaction_fab',
+        onPressed: _openAddTransaction,
+        backgroundColor: colors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
         ),
+        child: const Icon(Icons.add_rounded, size: 28),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

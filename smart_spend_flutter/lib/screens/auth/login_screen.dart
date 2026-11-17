@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/google_icon.dart';
 import '../dashboard/dashboard_shell.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -51,6 +52,17 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
+    if (success && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardShell()),
+      );
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.signInWithGoogle();
     if (success && mounted) {
       Navigator.pushReplacement(
         context,
@@ -148,10 +160,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: Text(
                           'SmartSpend',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                          style: AppTheme.brandStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
                             color: colors.textMain,
                           ),
                         ),
@@ -380,6 +391,89 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Divider "Or continue with"
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: colors.borderSubtle,
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'Or continue with',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: colors.borderSubtle,
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Google Sign-In Button
+                      OutlinedButton(
+                        onPressed:
+                            auth.isLoading ? null : _handleGoogleSignIn,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor:
+                              colors.surface2.withValues(alpha: 0.6),
+                          side: BorderSide(color: colors.borderSubtle),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const GoogleIcon(size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Continue with Google',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textMain,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Toggle Sign In / Sign Up Link
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() => _isLogin = !_isLogin);
+                            auth.clearError();
+                          },
+                          child: Text(
+                            _isLogin
+                                ? "Don't have an account? Sign up"
+                                : "Already have an account? Sign in",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

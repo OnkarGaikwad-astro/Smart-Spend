@@ -138,8 +138,11 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Filter & Export Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Container(
                 decoration: BoxDecoration(
@@ -148,6 +151,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                 ),
                 padding: const EdgeInsets.all(4),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildTimeButton('This Month', 'this_month', colors),
                     _buildTimeButton('Last Month', 'last_month', colors),

@@ -7,6 +7,10 @@ A complete, pixel-perfect, offline-first cross-platform Flutter application for 
 ## 🌟 Key Features & Capabilities
 
 ### 1. 100% Feature Parity with Web App
+- **Authentication & Google Sign-In**:
+  - **Email & Password**: Secure sign-in and sign-up with full name profile synchronization.
+  - **Google OAuth Login**: One-tap sign in with Google through Supabase OAuth, matching the web app flow and deep linking directly into the app.
+  - Offline session persistence: Users stay logged in even without internet connectivity.
 - **Overview Dashboard**:
   - 4 Real-time Metric Cards: **Total Balance**, **Total Income**, **Total Expenses**, and **Savings Rate %**.
   - **Spending Overview Bar Chart**: Interactive 6-month comparison of Income vs Expenses with tooltip breakdowns.

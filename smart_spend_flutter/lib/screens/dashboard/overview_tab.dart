@@ -62,9 +62,9 @@ class OverviewTab extends StatelessWidget {
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.15,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.25,
               children: [
                 OverviewCard(
                   title: 'Total Balance',
@@ -120,32 +120,38 @@ class OverviewTab extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Spending Overview',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: colors.textMain,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Spending Overview',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: colors.textMain,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Income vs Expenses — last 6 months',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.textMuted,
+                            const SizedBox(height: 2),
+                            Text(
+                              'Income vs Expenses — last 6 months',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       // Legend
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildLegendDot(colors.secondary, 'Income', colors),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           _buildLegendDot(colors.danger, 'Expenses', colors),
                         ],
                       ),
