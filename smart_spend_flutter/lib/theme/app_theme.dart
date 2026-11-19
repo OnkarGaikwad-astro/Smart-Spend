@@ -107,46 +107,46 @@ class AppColors extends ThemeExtension<AppColors> {
 }
 
 class AppTheme {
-  // Light Palette
+  // Light Palette - High Contrast Ocean Coast (matches Next.js website :root)
   static const AppColors lightColors = AppColors(
-    background: Color(0xFFF6F6E9), // Light Cream Base
-    primary: Color(0xFF447A9C), // Dark Ocean Blue
-    primarySoft: Color(0x26447A9C),
-    secondary: Color(0xFF7DA2C8), // Steel Blue
-    secondarySoft: Color(0x267DA2C8),
-    accent: Color(0xFF8DBEDE), // Light Sky Blue
-    accentSoft: Color(0x338DBEDE),
+    background: Color(0xFFF0F3EC), // Soft Web Cream-Ivory Base (#F0F3EC, sampled [240, 243, 236])
+    primary: Color(0xFF447A9C), // Dark Ocean Blue (#447A9C)
+    primarySoft: Color(0x26447A9C), // rgba(68, 122, 156, 0.15)
+    secondary: Color(0xFF7DA2C8), // Steel Blue (#7DA2C8)
+    secondarySoft: Color(0x267DA2C8), // rgba(125, 162, 200, 0.15)
+    accent: Color(0xFF8DBEDE), // Light Sky Blue (#8DBEDE)
+    accentSoft: Color(0x338DBEDE), // rgba(141, 190, 222, 0.2)
     danger: Color(0xFFEF4444),
     dangerSoft: Color(0x1AEF4444),
     success: Color(0xFF10B981),
     successSoft: Color(0x2610B981),
     purple: Color(0xFF7DA2C8),
-    surface: Color(0xFFEAF1F7),
-    surface2: Color(0xFFD7E5F1),
-    borderSubtle: Color(0xFFC3D8EA),
+    surface: Color(0xFFD2E1E9), // Luminous Sky Blue Glass Card (#D2E1E9, sampled [205, 220, 227])
+    surface2: Color(0xFFC0D3DF), // Elevated input / chip surface
+    borderSubtle: Color(0xFFBCCDD8), // Soft sky-border with zero harsh shadow (#BCCDD8)
     textMain: Color(0xFF2A4B61), // Deep Slate Blue
-    textMuted: Color(0xFF5C7F9B), // Muted Slate
+    textMuted: Color(0xFF5C7F9B), // Muted Slate Blue
   );
 
-  // Vibrant, High-Contrast Modern Dark Palette
+  // Aesthetic, borderless and non-vibrant obsidian slate dark palette
   static const AppColors darkColors = AppColors(
-    background: Color(0xFF0A0F1D), // Deep Cosmic Obsidian
-    primary: Color(0xFF38BDF8), // Electric Vivid Sky Blue
-    primarySoft: Color(0x2638BDF8),
-    secondary: Color(0xFF818CF8), // Radiant Indigo
-    secondarySoft: Color(0x26818CF8),
-    accent: Color(0xFF2DD4BF), // Glowing Neon Mint
-    accentSoft: Color(0x262DD4BF),
-    danger: Color(0xFFF43F5E), // Vibrant Crimson Rose
-    dangerSoft: Color(0x26F43F5E),
-    success: Color(0xFF10B981), // Crisp Emerald Green
-    successSoft: Color(0x2610B981),
-    purple: Color(0xFFA855F7), // Electric Lilac
-    surface: Color(0xFF11192C), // Deep Midnight Card Surface
-    surface2: Color(0xFF1B253D), // Elevated Card / Chip
-    borderSubtle: Color(0xFF283553), // Modern Hairline Border
-    textMain: Color(0xFFF8FAFC), // Pure Crisp White
-    textMuted: Color(0xFF94A3B8), // Sleek Slate 400
+    background: Color(0xFF101318), // Deep obsidian charcoal canvas
+    primary: Color(0xFF829BB4), // Sophisticated desaturated slate blue
+    primarySoft: Color(0x1F829BB4), // 12% alpha
+    secondary: Color(0xFF729E8B), // Serene muted eucalyptus / sage (income)
+    secondarySoft: Color(0x1F729E8B), // 12% alpha
+    accent: Color(0xFF8D99B8), // Soft dusty periwinkle / lavender
+    accentSoft: Color(0x1F8D99B8), // 12% alpha
+    danger: Color(0xFFCE787C), // Muted dusty rose / terracotta (expenses)
+    dangerSoft: Color(0x1FCE787C), // 12% alpha
+    success: Color(0xFF729E8B), // Serene muted sage
+    successSoft: Color(0x1F729E8B), // 12% alpha
+    purple: Color(0xFF9199B8), // Dusky lilac slate
+    surface: Color(0xFF181C23), // Smooth elevated charcoal surface (borderless)
+    surface2: Color(0xFF222731), // Input and chip surface
+    borderSubtle: Colors.transparent, // Zero visible borders for pure aesthetic
+    textMain: Color(0xFFE4E8ED), // Anti-glare soft crisp off-white
+    textMuted: Color(0xFF818C98), // Balanced, calm slate gray
   );
 
   static AppColors of(BuildContext context) {
@@ -248,7 +248,7 @@ class AppTheme {
         displayColor: darkColors.textMain,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: darkColors.surface.withValues(alpha: 0.9),
+        backgroundColor: darkColors.background,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.josefinSans(
@@ -263,27 +263,30 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: darkColors.borderSubtle, width: 1),
+          side: BorderSide.none,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: darkColors.surface2.withValues(alpha: 0.5),
+        fillColor: darkColors.surface2,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: darkColors.borderSubtle),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: darkColors.borderSubtle),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: darkColors.primary, width: 2),
+          borderSide: BorderSide(
+            color: darkColors.primary.withValues(alpha: 0.6),
+            width: 1.5,
+          ),
         ),
         labelStyle: TextStyle(color: darkColors.textMuted),
-        hintStyle: TextStyle(color: darkColors.textMuted.withValues(alpha: 0.7)),
+        hintStyle: TextStyle(color: darkColors.textMuted.withValues(alpha: 0.6)),
       ),
       extensions: const [darkColors],
     );

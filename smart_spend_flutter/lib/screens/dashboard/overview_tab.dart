@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -52,57 +53,59 @@ class OverviewTab extends StatelessWidget {
       backgroundColor: colors.surface,
       onRefresh: () => provider.fetchData(),
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 4 Overview Cards (2x2 Grid)
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.25,
-              children: [
-                OverviewCard(
-                  title: 'Total Balance',
-                  amount: AppUtils.formatCurrency(provider.totalBalance),
-                  trend: 'Current balance',
-                  icon: Icons.account_balance_wallet_rounded,
-                  iconColor: colors.primary,
-                  iconBg: colors.primarySoft,
-                  positive: provider.totalBalance >= 0,
-                ),
-                OverviewCard(
-                  title: 'Income',
-                  amount: AppUtils.formatCurrency(provider.totalIncome),
-                  trend: 'Total earned',
-                  icon: Icons.arrow_outward_rounded,
-                  iconColor: colors.secondary,
-                  iconBg: colors.secondarySoft,
-                  positive: true,
-                ),
-                OverviewCard(
-                  title: 'Expenses',
-                  amount: AppUtils.formatCurrency(provider.totalExpense),
-                  trend: 'Total spent',
-                  icon: Icons.arrow_downward_rounded,
-                  iconColor: colors.danger,
-                  iconBg: colors.dangerSoft,
-                  positive: false,
-                ),
-                OverviewCard(
-                  title: 'Savings Rate',
-                  amount: '${provider.savingsRate}%',
-                  trend: 'Of total income',
-                  icon: Icons.savings_rounded,
-                  iconColor: colors.accent,
-                  iconBg: colors.accentSoft,
-                  positive: provider.totalBalance > 0,
-                ),
-              ],
+            RepaintBoundary(
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.08,
+                children: [
+                  OverviewCard(
+                    title: 'Total Balance',
+                    amount: AppUtils.formatCurrency(provider.totalBalance),
+                    trend: 'Current balance',
+                    icon: Icons.account_balance_wallet_rounded,
+                    iconColor: colors.primary,
+                    iconBg: colors.primarySoft,
+                    positive: provider.totalBalance >= 0,
+                  ),
+                  OverviewCard(
+                    title: 'Income',
+                    amount: AppUtils.formatCurrency(provider.totalIncome),
+                    trend: 'Total earned',
+                    icon: Icons.arrow_outward_rounded,
+                    iconColor: colors.secondary,
+                    iconBg: colors.secondarySoft,
+                    positive: true,
+                  ),
+                  OverviewCard(
+                    title: 'Expenses',
+                    amount: AppUtils.formatCurrency(provider.totalExpense),
+                    trend: 'Total spent',
+                    icon: Icons.arrow_downward_rounded,
+                    iconColor: colors.danger,
+                    iconBg: colors.dangerSoft,
+                    positive: false,
+                  ),
+                  OverviewCard(
+                    title: 'Savings Rate',
+                    amount: '${provider.savingsRate}%',
+                    trend: 'Of total income',
+                    icon: Icons.savings_rounded,
+                    iconColor: colors.accent,
+                    iconBg: colors.accentSoft,
+                    positive: provider.totalBalance > 0,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -112,7 +115,9 @@ class OverviewTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.borderSubtle, width: 1),
+                border: colors.borderSubtle == Colors.transparent
+                    ? null
+                    : Border.all(color: colors.borderSubtle, width: 1),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,95 +185,97 @@ class OverviewTab extends StatelessWidget {
                               ],
                             ),
                           )
-                        : BarChart(
-                            BarChartData(
-                              alignment: BarChartAlignment.spaceAround,
-                              barTouchData: BarTouchData(
-                                touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => colors.surface2,
-                                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                    final month = monthlyData[groupIndex].month;
-                                    final isInc = rodIndex == 0;
-                                    return BarTooltipItem(
-                                      '$month\n${isInc ? "Income" : "Expense"}: ${AppUtils.formatCurrency(rod.toY)}',
-                                      TextStyle(
-                                        color: colors.textMain,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (value, meta) {
-                                      final idx = value.toInt();
-                                      if (idx < 0 || idx >= monthlyData.length) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Padding(
-                                        padding: const EdgeInsets.only(top: 8.0),
-                                        child: Text(
-                                          monthlyData[idx].month,
-                                          style: TextStyle(
-                                            color: colors.textMuted,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                        : RepaintBoundary(
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                barTouchData: BarTouchData(
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (_) => colors.surface2,
+                                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                      final month = monthlyData[groupIndex].month;
+                                      final isInc = rodIndex == 0;
+                                      return BarTooltipItem(
+                                        '$month\n${isInc ? "Income" : "Expense"}: ${AppUtils.formatCurrency(rod.toY)}',
+                                        TextStyle(
+                                          color: colors.textMain,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       );
                                     },
                                   ),
                                 ),
-                                leftTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: const AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                              ),
-                              gridData: FlGridData(
-                                show: true,
-                                drawVerticalLine: false,
-                                horizontalInterval: 5000,
-                                getDrawingHorizontalLine: (_) => FlLine(
-                                  color: colors.borderSubtle.withValues(alpha: 0.5),
-                                  strokeWidth: 1,
-                                  dashArray: [4, 4],
-                                ),
-                              ),
-                              borderData: FlBorderData(show: false),
-                              barGroups: List.generate(monthlyData.length, (i) {
-                                final d = monthlyData[i];
-                                return BarChartGroupData(
-                                  x: i,
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: d.income,
-                                      color: colors.secondary,
-                                      width: 12,
-                                      borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(4),
-                                      ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        final idx = value.toInt();
+                                        if (idx < 0 || idx >= monthlyData.length) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            monthlyData[idx].month,
+                                            style: TextStyle(
+                                              color: colors.textMuted,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    BarChartRodData(
-                                      toY: d.expense,
-                                      color: colors.danger,
-                                      width: 12,
-                                      borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(4),
+                                  ),
+                                  leftTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  horizontalInterval: 5000,
+                                  getDrawingHorizontalLine: (_) => FlLine(
+                                    color: colors.textMuted.withValues(alpha: 0.12),
+                                    strokeWidth: 1,
+                                    dashArray: [4, 4],
+                                  ),
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups: List.generate(monthlyData.length, (i) {
+                                  final d = monthlyData[i];
+                                  return BarChartGroupData(
+                                    x: i,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: d.income,
+                                        color: colors.secondary,
+                                        width: 12,
+                                        borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(4),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              }),
+                                      BarChartRodData(
+                                        toY: d.expense,
+                                        color: colors.danger,
+                                        width: 12,
+                                        borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(4),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
                             ),
                           ),
                   ),
@@ -283,7 +290,9 @@ class OverviewTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.borderSubtle, width: 1),
+                border: colors.borderSubtle == Colors.transparent
+                    ? null
+                    : Border.all(color: colors.borderSubtle, width: 1),
               ),
               child: Column(
                 children: [
@@ -302,6 +311,7 @@ class OverviewTab extends StatelessWidget {
                         children: [
                           InkWell(
                             onTap: () {
+                              HapticFeedback.lightImpact();
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
@@ -336,7 +346,10 @@ class OverviewTab extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           InkWell(
-                            onTap: onNavigateToTransactions,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              onNavigateToTransactions();
+                            },
                             child: Text(
                               'View all →',
                               style: TextStyle(
@@ -365,19 +378,23 @@ class OverviewTab extends StatelessWidget {
                       ),
                     )
                   else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: provider.recentTransactions.length,
-                      separatorBuilder: (context, index) => Divider(
-                        height: 1,
-                        color: colors.borderSubtle.withValues(alpha: 0.5),
+                    RepaintBoundary(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.recentTransactions.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          color: colors.borderSubtle == Colors.transparent
+                              ? colors.textMuted.withValues(alpha: 0.08)
+                              : colors.borderSubtle.withValues(alpha: 0.5),
+                        ),
+                        itemBuilder: (ctx, idx) {
+                          return TransactionItemTile(
+                            transaction: provider.recentTransactions[idx],
+                          );
+                        },
                       ),
-                      itemBuilder: (ctx, idx) {
-                        return TransactionItemTile(
-                          transaction: provider.recentTransactions[idx],
-                        );
-                      },
                     ),
                 ],
               ),

@@ -8,6 +8,7 @@ import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_shell.dart';
+import 'screens/splash/splash_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
 import 'theme/app_theme.dart';
@@ -62,7 +63,7 @@ class SmartSpendApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode:
                 appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const RootGatekeeper(),
+            home: const SplashScreen(),
           );
         },
       ),

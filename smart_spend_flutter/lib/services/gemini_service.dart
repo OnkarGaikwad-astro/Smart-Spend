@@ -3,6 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants.dart';
 
+class AurexChatResult {
+  final String text;
+  final List<Map<String, dynamic>> actions;
+
+  AurexChatResult({
+    required this.text,
+    this.actions = const [],
+  });
+}
+
 class GeminiService {
   static final GeminiService _instance = GeminiService._internal();
   factory GeminiService() => _instance;
@@ -13,60 +23,81 @@ class GeminiService {
       'https://generativelanguage.googleapis.com/v1beta/models';
 
   /// Chat with Aurex, the AI financial assistant
-  Future<String> chatWithAurex({
+  Future<AurexChatResult> chatWithAurex({
     required List<Map<String, String>> messages,
     required Map<String, dynamic> context,
+    String? transactionsCsv,
   }) async {
     final apiKey = AppConstants.geminiApiKey;
     if (apiKey.isEmpty) {
-      return 'Error: Gemini API key is missing.';
+      return AurexChatResult(text: 'Error: Gemini API key is missing.');
     }
 
     final now = DateTime.now();
     final dateStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-    final transactionsList = (context['transactions'] as List? ?? [])
-        .map((t) =>
-            '- ${t['date']?.toString().split('T')[0] ?? ''}: ${t['title']} (${t['category']}) - ${t['type'] == 'INCOME' ? '+' : '-'}₹${(t['amount'] as num?)?.abs() ?? 0}')
-        .join('\n');
-
     final goalsList = (context['goals'] as List? ?? [])
         .map((g) => '- ${g['name']}: ₹${g['saved']} / ₹${g['target']} saved')
         .join('\n');
 
-    final systemInstruction = '''
-You are Aurex, a helpful, encouraging, and friendly financial assistant for the SmartSpend app.
-The current date and time right now is: $dateStr.
-Use this date to answer questions like "this week", "today", "last month", etc.
+    final csvContent = (transactionsCsv != null && transactionsCsv.trim().isNotEmpty)
+        ? transactionsCsv.trim()
+        : 'Date,Title,Category,Type,Amount (INR)\n(No transactions recorded yet)';
 
-Here is the user's current financial context:
+    final systemInstruction = '''
+You are Aurex, the expert financial AI assistant for the SmartSpend app.
+The current date and time right now is: $dateStr.
+Use this timestamp for questions regarding "today", "yesterday", "this week", "this month", "last month", etc.
+
+User's Financial Summary:
 - Total Balance: ₹${context['totalBalance']}
 - Total Income: ₹${context['totalIncome']}
 - Total Expenses: ₹${context['totalExpense']}
 
-All Transactions History:
-$transactionsList
-
-Active Goals:
+Active Savings Goals:
 $goalsList
 
-Please use this context to answer the user's questions in a short, conversational, and helpful manner. Avoid huge blocks of text. Use emojis occasionally!
+ATTACHED TRANSACTIONS CSV FILE (transactions.csv):
+```csv
+$csvContent
+```
+
+CAPABILITY - ADDING TRANSACTIONS & INCOME:
+You can directly add transactions or income to the user's account!
+When the user asks you to add, log, spend, earn, or record an expense or income (e.g. "add 200 for lunch", "spent 150 on petrol", "add 5000 income from salary", "I earned 1200 freelancing today", "bought groceries for 450 add it"):
+1. In your message, warmly confirm what you have recorded (e.g. "✅ Added expense of ₹200 for Lunch under Food!").
+2. At the very end of your response, output a TRANSACTION_ACTION block formatted EXACTLY as:
+<<<TRANSACTION_ACTION
+{
+  "title": "<Short Description>",
+  "amount": <positive number, e.g. 200.0>,
+  "type": "<EXPENSE or INCOME>",
+  "category": "<Food | Transport | Subscriptions | Entertainment | Shopping | Bills | Salary | Freelance | Investment | Gift | Other>",
+  "date": "<ISO 8601 string, e.g. 2026-11-19T12:00:00>"
+}
+TRANSACTION_ACTION>>>
+If multiple transactions are requested in one prompt, you may output a JSON array of objects inside the block.
+
+CRITICAL INSTRUCTIONS:
+1. An official transactions.csv file has been attached above containing all user transactions with Date, Title, Category, Type, and Amount.
+2. ALWAYS base your answers, totals, categories, merchant breakdowns, and trend analyses directly on this attached CSV.
+3. Calculate sums and counts accurately from the CSV entries. Mention specific transaction names, dates, and amounts when helpful.
+4. Keep answers friendly, conversational, concise, and easy to read. Use bullet points for breakdowns and emojis occasionally. Always use ₹ (INR) for amounts.
 ''';
 
     final contents = <Map<String, dynamic>>[];
 
-    // Add context and conversation history
+    // Add conversation history
     for (int i = 0; i < messages.length; i++) {
       final m = messages[i];
       final isLast = i == messages.length - 1;
       final role = m['role'] == 'ai' ? 'model' : 'user';
       var text = m['content'] ?? '';
 
-      if (i == 0 && role == 'user') {
-        text = '$systemInstruction\n\nUser Question: $text';
-      } else if (isLast && role == 'user') {
-        text = 'User Question: $text';
+      if (isLast && role == 'user') {
+        text = '''[Attached File: transactions.csv]
+$text''';
       }
 
       contents.add({
@@ -83,10 +114,15 @@ Please use this context to answer the user's questions in a short, conversationa
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'system_instruction': {
+            'parts': [
+              {'text': systemInstruction}
+            ]
+          },
           'contents': contents,
           'generationConfig': {
             'temperature': 0.7,
-            'maxOutputTokens': 800,
+            'maxOutputTokens': 1000,
           }
         }),
       );
@@ -98,18 +134,54 @@ Please use this context to answer the user's questions in a short, conversationa
           final content = candidates[0]['content'];
           final parts = content['parts'] as List?;
           if (parts != null && parts.isNotEmpty) {
-            return parts[0]['text'] ?? 'No response generated.';
+            final rawText = parts[0]['text']?.toString() ?? 'No response generated.';
+            return _parseAurexResponse(rawText);
           }
         }
-        return 'No response generated.';
+        return AurexChatResult(text: 'No response generated.');
       } else {
         debugPrint('[GeminiService] API error: ${response.statusCode} - ${response.body}');
-        return 'Sorry, I encountered an issue communicating with the AI service. (Code ${response.statusCode})';
+        return AurexChatResult(
+          text: 'Sorry, I encountered an issue communicating with the AI service. (Code ${response.statusCode})',
+        );
       }
     } catch (e) {
       debugPrint('[GeminiService] Network error: $e');
-      return 'Sorry, I could not connect to Aurex. Please check your internet connection.';
+      return AurexChatResult(
+        text: 'Sorry, I could not connect to Aurex. Please check your internet connection.',
+      );
     }
+  }
+
+  /// Parses action blocks out of the response
+  AurexChatResult _parseAurexResponse(String raw) {
+    final actionRegex = RegExp(
+      r'<<<TRANSACTION_ACTION\s*([\s\S]*?)\s*TRANSACTION_ACTION>>>',
+      caseSensitive: false,
+    );
+    final match = actionRegex.firstMatch(raw);
+    List<Map<String, dynamic>> actions = [];
+    String cleanText = raw;
+
+    if (match != null) {
+      final jsonBlock = match.group(1)?.trim() ?? '';
+      cleanText = raw.replaceAll(actionRegex, '').trim();
+      try {
+        final parsed = jsonDecode(jsonBlock);
+        if (parsed is List) {
+          actions = List<Map<String, dynamic>>.from(parsed);
+        } else if (parsed is Map) {
+          actions = [Map<String, dynamic>.from(parsed)];
+        }
+      } catch (e) {
+        debugPrint('[GeminiService] Failed to parse transaction action: $e');
+      }
+    }
+
+    return AurexChatResult(
+      text: cleanText.isEmpty ? 'Transaction recorded successfully!' : cleanText,
+      actions: actions,
+    );
   }
 
   /// Extract transactions from receipt or bill image

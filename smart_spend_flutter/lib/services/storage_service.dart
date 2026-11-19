@@ -27,6 +27,11 @@ class StorageService {
     _profileBox = await Hive.openBox(AppConstants.profileBox);
     _syncQueueBox = await Hive.openBox(AppConstants.syncQueueBox);
     _settingsBox = await Hive.openBox(AppConstants.settingsBox);
+
+    if (!_settingsBox.containsKey('dark_aesthetic_applied_v3')) {
+      await _settingsBox.put('dark_aesthetic_applied_v3', true);
+      await _settingsBox.put('is_dark_mode', true);
+    }
   }
 
   // --- Transactions ---
@@ -149,10 +154,11 @@ class StorageService {
 
   // --- Settings ---
   bool isDarkMode() {
-    return _settingsBox.get('is_dark_mode', defaultValue: false) as bool;
+    return _settingsBox.get('is_dark_mode', defaultValue: true) as bool;
   }
 
   Future<void> setDarkMode(bool isDark) async {
+    await _settingsBox.put('dark_aesthetic_applied_v3', true);
     await _settingsBox.put('is_dark_mode', isDark);
   }
 

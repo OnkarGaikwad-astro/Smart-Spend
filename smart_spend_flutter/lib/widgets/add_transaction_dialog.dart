@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -186,6 +187,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   }
 
   Future<void> _pickDateTime() async {
+    HapticFeedback.lightImpact();
     final date = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -212,6 +214,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   }
 
   Future<void> _submit() async {
+    HapticFeedback.mediumImpact();
     final amtText = _amountController.text.trim();
     final title = _titleController.text.trim();
 
@@ -256,6 +259,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   }
 
   Future<void> _delete() async {
+    HapticFeedback.mediumImpact();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -302,7 +306,9 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: colors.borderSubtle == Colors.transparent
+              ? null
+              : Border.all(color: colors.borderSubtle, width: 1),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -355,7 +361,10 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         ),
                       IconButton(
                         icon: Icon(Icons.close_rounded, color: colors.textMuted),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
                       ),
                     ],
                   ),
@@ -402,6 +411,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
+                          HapticFeedback.selectionClick();
                           setState(() {
                             _type = 'EXPENSE';
                             _category = 'Food';
@@ -440,6 +450,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
+                          HapticFeedback.selectionClick();
                           setState(() {
                             _type = 'INCOME';
                             _category = 'Parents';
@@ -545,7 +556,9 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                   decoration: BoxDecoration(
                     color: colors.surface2.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.borderSubtle),
+                    border: colors.borderSubtle == Colors.transparent
+                        ? null
+                        : Border.all(color: colors.borderSubtle),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

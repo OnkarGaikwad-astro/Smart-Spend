@@ -19,7 +19,7 @@ class AppProvider extends ChangeNotifier {
   List<GoalModel> _goals = [];
   UserProfileModel? _userProfile;
   bool _isLoading = false;
-  bool _isDarkMode = false;
+  bool _isDarkMode = true;
 
   List<TransactionModel> get transactions => _transactions;
   List<BudgetModel> get budgets => _budgets;

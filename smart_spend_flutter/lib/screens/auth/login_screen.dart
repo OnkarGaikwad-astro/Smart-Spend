@@ -116,12 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: colors.surface.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: colors.borderSubtle, width: 1),
+                    border: colors.borderSubtle == Colors.transparent
+                        ? null
+                        : Border.all(color: colors.borderSubtle, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
@@ -399,7 +401,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Expanded(
                             child: Divider(
-                              color: colors.borderSubtle,
+                              color: colors.borderSubtle == Colors.transparent
+                                  ? colors.textMuted.withValues(alpha: 0.12)
+                                  : colors.borderSubtle,
                               thickness: 1,
                             ),
                           ),
@@ -417,7 +421,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           Expanded(
                             child: Divider(
-                              color: colors.borderSubtle,
+                              color: colors.borderSubtle == Colors.transparent
+                                  ? colors.textMuted.withValues(alpha: 0.12)
+                                  : colors.borderSubtle,
                               thickness: 1,
                             ),
                           ),
@@ -432,7 +438,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: OutlinedButton.styleFrom(
                           backgroundColor:
                               colors.surface2.withValues(alpha: 0.6),
-                          side: BorderSide(color: colors.borderSubtle),
+                          side: colors.borderSubtle == Colors.transparent
+                              ? BorderSide.none
+                              : BorderSide(color: colors.borderSubtle),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),

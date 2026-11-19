@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -214,9 +215,11 @@ class _TransactionsTabState extends State<TransactionsTab> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             decoration: BoxDecoration(
               color: colors.surface,
-              border: Border(
-                bottom: BorderSide(color: colors.borderSubtle, width: 0.5),
-              ),
+              border: colors.borderSubtle == Colors.transparent
+                  ? null
+                  : Border(
+                      bottom: BorderSide(color: colors.borderSubtle, width: 0.5),
+                    ),
             ),
             child: Column(
               children: [
@@ -236,6 +239,7 @@ class _TransactionsTabState extends State<TransactionsTab> {
                               ? IconButton(
                                   icon: const Icon(Icons.clear_rounded, size: 18),
                                   onPressed: () {
+                                    HapticFeedback.lightImpact();
                                     _searchController.clear();
                                     setState(() {});
                                   },
@@ -256,10 +260,15 @@ class _TransactionsTabState extends State<TransactionsTab> {
                         foregroundColor: colors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: colors.borderSubtle),
+                          side: colors.borderSubtle == Colors.transparent
+                              ? BorderSide.none
+                              : BorderSide(color: colors.borderSubtle),
                         ),
                       ),
-                      onPressed: () => _exportCSV(filtered),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _exportCSV(filtered);
+                      },
                     ),
                     const SizedBox(width: 6),
                     IconButton(
@@ -273,6 +282,7 @@ class _TransactionsTabState extends State<TransactionsTab> {
                         ),
                       ),
                       onPressed: () {
+                        HapticFeedback.mediumImpact();
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
@@ -315,6 +325,7 @@ class _TransactionsTabState extends State<TransactionsTab> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         onSelected: (_) {
+                          HapticFeedback.selectionClick();
                           setState(() => _selectedCategory = cat);
                         },
                       );
@@ -382,19 +393,25 @@ class _TransactionsTabState extends State<TransactionsTab> {
                       ],
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: colors.borderSubtle.withValues(alpha: 0.5),
+                : RepaintBoundary(
+                    child: ListView.separated(
+                      physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics()),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      itemCount: filtered.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        color: colors.borderSubtle == Colors.transparent
+                            ? colors.textMuted.withValues(alpha: 0.08)
+                            : colors.borderSubtle.withValues(alpha: 0.5),
+                      ),
+                      itemBuilder: (ctx, idx) {
+                        return TransactionItemTile(
+                          transaction: filtered[idx],
+                        );
+                      },
                     ),
-                    itemBuilder: (ctx, idx) {
-                      return TransactionItemTile(
-                        transaction: filtered[idx],
-                      );
-                    },
                   ),
           ),
         ],

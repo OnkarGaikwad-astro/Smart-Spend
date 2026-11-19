@@ -68,7 +68,9 @@ class _DepositDialogState extends State<DepositDialog> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: colors.borderSubtle == Colors.transparent
+              ? null
+              : Border.all(color: colors.borderSubtle, width: 1),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -228,7 +230,9 @@ class _DepositDialogState extends State<DepositDialog> {
                       color: colors.textMain,
                     ),
                     backgroundColor: colors.surface2,
-                    side: BorderSide(color: colors.borderSubtle),
+                    side: colors.borderSubtle == Colors.transparent
+                        ? BorderSide.none
+                        : BorderSide(color: colors.borderSubtle),
                     onPressed: () => _addAmount(amt),
                   );
                 }).toList(),

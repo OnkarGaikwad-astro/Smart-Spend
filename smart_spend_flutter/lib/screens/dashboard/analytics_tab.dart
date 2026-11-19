@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -133,6 +134,7 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
     }
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,12 +161,17 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                 ),
               ),
               OutlinedButton.icon(
-                onPressed: () => _exportCSV(provider.transactions),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _exportCSV(provider.transactions);
+                },
                 icon: const Icon(Icons.download_rounded, size: 16),
                 label: const Text('Export CSV', style: TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: colors.primary,
-                  side: BorderSide(color: colors.borderSubtle),
+                  side: colors.borderSubtle == Colors.transparent
+                      ? BorderSide.none
+                      : BorderSide(color: colors.borderSubtle),
                   backgroundColor: colors.surface,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -183,7 +190,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: colors.borderSubtle, width: 1),
+              border: colors.borderSubtle == Colors.transparent
+                  ? null
+                  : Border.all(color: colors.borderSubtle, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +289,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: colors.borderSubtle, width: 1),
+              border: colors.borderSubtle == Colors.transparent
+                  ? null
+                  : Border.all(color: colors.borderSubtle, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +335,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                               drawVerticalLine: false,
                               horizontalInterval: 2000,
                               getDrawingHorizontalLine: (_) => FlLine(
-                                color: colors.borderSubtle.withValues(alpha: 0.5),
+                                color: colors.borderSubtle == Colors.transparent
+                                    ? colors.textMuted.withValues(alpha: 0.12)
+                                    : colors.borderSubtle.withValues(alpha: 0.5),
                                 strokeWidth: 1,
                                 dashArray: [4, 4],
                               ),
@@ -401,7 +414,9 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: colors.borderSubtle, width: 1),
+              border: colors.borderSubtle == Colors.transparent
+                  ? null
+                  : Border.all(color: colors.borderSubtle, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,8 +491,10 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
                         decoration: BoxDecoration(
                           color: colors.surface2,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: colors.borderSubtle.withValues(alpha: 0.5)),
+                          border: colors.borderSubtle == Colors.transparent
+                              ? null
+                              : Border.all(
+                                  color: colors.borderSubtle.withValues(alpha: 0.5)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -516,7 +533,12 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
   Widget _buildTimeButton(String title, String val, AppColors colors) {
     final isSelected = _timeRange == val;
     return GestureDetector(
-      onTap: () => setState(() => _timeRange = val),
+      onTap: () {
+        if (_timeRange != val) {
+          HapticFeedback.selectionClick();
+          setState(() => _timeRange = val);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(

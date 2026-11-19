@@ -119,7 +119,9 @@ class _BudgetDialogState extends State<BudgetDialog> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: colors.borderSubtle == Colors.transparent
+              ? null
+              : Border.all(color: colors.borderSubtle, width: 1),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -238,10 +240,11 @@ class _BudgetDialogState extends State<BudgetDialog> {
                       decoration: BoxDecoration(
                         color: isSelected ? colors.primarySoft : colors.surface2,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? colors.primary : colors.borderSubtle,
-                          width: isSelected ? 2 : 1,
-                        ),
+                        border: isSelected
+                            ? Border.all(color: colors.primary, width: 2)
+                            : (colors.borderSubtle == Colors.transparent
+                                ? null
+                                : Border.all(color: colors.borderSubtle, width: 1)),
                       ),
                       alignment: Alignment.center,
                       child: Text(emoji, style: const TextStyle(fontSize: 20)),

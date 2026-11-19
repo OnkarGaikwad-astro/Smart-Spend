@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/utils.dart';
@@ -28,7 +29,7 @@ class BudgetTab extends StatelessWidget {
       backgroundColor: colors.surface,
       onRefresh: () => provider.fetchData(),
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -47,13 +48,12 @@ class BudgetTab extends StatelessWidget {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      border: colors.borderSubtle == Colors.transparent
+                          ? null
+                          : Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +104,9 @@ class BudgetTab extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colors.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.borderSubtle, width: 1),
+                      border: colors.borderSubtle == Colors.transparent
+                          ? null
+                          : Border.all(color: colors.borderSubtle, width: 1),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +164,9 @@ class BudgetTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.borderSubtle, width: 1),
+                border: colors.borderSubtle == Colors.transparent
+                    ? null
+                    : Border.all(color: colors.borderSubtle, width: 1),
               ),
               child: Column(
                 children: [
@@ -179,6 +183,7 @@ class BudgetTab extends StatelessWidget {
                       ),
                       InkWell(
                         onTap: () {
+                          HapticFeedback.mediumImpact();
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -230,7 +235,9 @@ class BudgetTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colors.borderSubtle, width: 1),
+                border: colors.borderSubtle == Colors.transparent
+                    ? null
+                    : Border.all(color: colors.borderSubtle, width: 1),
               ),
               child: Column(
                 children: [
@@ -247,6 +254,7 @@ class BudgetTab extends StatelessWidget {
                       ),
                       InkWell(
                         onTap: () {
+                          HapticFeedback.mediumImpact();
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -294,6 +302,7 @@ class BudgetTab extends StatelessWidget {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () async {
+                          HapticFeedback.mediumImpact();
                           final leftover =
                               provider.totalIncome - provider.totalExpense;
                           if (leftover <= 0) {
@@ -363,6 +372,7 @@ class BudgetTab extends StatelessWidget {
 
     return InkWell(
       onTap: () {
+        HapticFeedback.lightImpact();
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -440,7 +450,9 @@ class BudgetTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface2.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
+        border: colors.borderSubtle == Colors.transparent
+            ? null
+            : Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,6 +463,7 @@ class BudgetTab extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: () {
+                    HapticFeedback.lightImpact();
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -502,6 +515,7 @@ class BudgetTab extends StatelessWidget {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_provider.dart';
@@ -6,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/add_transaction_dialog.dart';
 import '../../widgets/ai_assistant_sheet.dart';
+import '../../widgets/brain_icon.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/profile_dialog.dart';
 import '../../widgets/user_avatar.dart';
@@ -34,6 +36,7 @@ class _DashboardShellState extends State<DashboardShell> {
   }
 
   void _openAddTransaction() {
+    HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -43,6 +46,7 @@ class _DashboardShellState extends State<DashboardShell> {
   }
 
   void _openAIAssistant() {
+    HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -52,6 +56,7 @@ class _DashboardShellState extends State<DashboardShell> {
   }
 
   void _openProfile() {
+    HapticFeedback.lightImpact();
     showDialog(
       context: context,
       builder: (_) => const ProfileDialog(),
@@ -83,12 +88,26 @@ class _DashboardShellState extends State<DashboardShell> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        titleSpacing: 16,
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
+        titleSpacing: 0,
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: appProvider.isDarkMode
+            ? colors.background
+            : colors.surface.withValues(alpha: 0.85),
+        shape: appProvider.isDarkMode
+            ? null
+            : Border(
+                bottom: BorderSide(
+                  color: colors.borderSubtle,
+                  width: 0.8,
+                ),
+              ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 color: colors.primary,
@@ -100,20 +119,20 @@ class _DashboardShellState extends State<DashboardShell> {
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.account_balance_wallet_rounded,
                   color: Colors.white,
-                  size: 18,
+                  size: 22,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Text(
-              'SmartSpend',
-              style: AppTheme.brandStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: colors.textMain,
-              ),
-            ),
-          ],
+          ),
+        ),
+        leadingWidth: 52,
+        title: Text(
+          'SmartSpend',
+          style: AppTheme.brandStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: colors.textMain,
+          ),
         ),
         actions: [
           // Aurex AI Assistant Button in AppBar
@@ -122,33 +141,21 @@ class _DashboardShellState extends State<DashboardShell> {
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.15),
+                color: colors.primarySoft,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: colors.primary.withValues(alpha: 0.3),
-                  width: 1,
-                ),
+                border: appProvider.isDarkMode
+                    ? null
+                    : Border.all(
+                        color: colors.primary.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
               ),
-              child: Icon(
-                Icons.auto_awesome_rounded,
+              child: BrainIcon(
                 color: colors.primary,
-                size: 18,
+                size: 20,
               ),
             ),
             onPressed: _openAIAssistant,
-          ),
-
-          // Theme Toggle Button
-          IconButton(
-            tooltip: 'Toggle Theme',
-            icon: Icon(
-              appProvider.isDarkMode
-                  ? Icons.light_mode_rounded
-                  : Icons.dark_mode_rounded,
-              color: colors.textMain,
-              size: 20,
-            ),
-            onPressed: () => appProvider.toggleTheme(),
           ),
 
           // Profile Button
@@ -175,26 +182,29 @@ class _DashboardShellState extends State<DashboardShell> {
             child: IndexedStack(
               index: _currentIndex,
               children: [
-                OverviewTab(
-                  onNavigateToTransactions: () {
-                    setState(() => _currentIndex = 1);
-                  },
+                RepaintBoundary(
+                  child: OverviewTab(
+                    onNavigateToTransactions: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _currentIndex = 1);
+                    },
+                  ),
                 ),
-                const TransactionsTab(),
-                const BudgetTab(),
-                const AnalyticsTab(),
+                const RepaintBoundary(child: TransactionsTab()),
+                const RepaintBoundary(child: BudgetTab()),
+                const RepaintBoundary(child: AnalyticsTab()),
               ],
             ),
           ),
         ],
       ),
-      // Single Clean Add Transaction FAB
+      // Single Clean Add Transaction FAB (elevation 0, no drop shadows)
       floatingActionButton: FloatingActionButton(
         heroTag: 'add_transaction_fab',
         onPressed: _openAddTransaction,
         backgroundColor: colors.primary,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -203,9 +213,11 @@ class _DashboardShellState extends State<DashboardShell> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: colors.surface,
-          border: Border(
-            top: BorderSide(color: colors.borderSubtle, width: 0.5),
-          ),
+          border: appProvider.isDarkMode
+              ? null
+              : Border(
+                  top: BorderSide(color: colors.borderSubtle, width: 0.5),
+                ),
         ),
         child: NavigationBar(
           selectedIndex: _currentIndex,
@@ -213,7 +225,12 @@ class _DashboardShellState extends State<DashboardShell> {
           indicatorColor: colors.primarySoft,
           elevation: 0,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+          onDestinationSelected: (idx) {
+            if (_currentIndex != idx) {
+              HapticFeedback.selectionClick();
+              setState(() => _currentIndex = idx);
+            }
+          },
           destinations: [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined, color: colors.textMuted),

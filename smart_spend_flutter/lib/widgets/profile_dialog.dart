@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../providers/auth_provider.dart';
@@ -65,12 +66,14 @@ class _ProfileDialogState extends State<ProfileDialog> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: colors.borderSubtle == Colors.transparent
+              ? null
+              : Border.all(color: colors.borderSubtle, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -97,7 +100,10 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       right: 12,
                       child: IconButton(
                         icon: const Icon(Icons.close_rounded, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
                       ),
                     ),
                   ],
@@ -166,7 +172,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       decoration: BoxDecoration(
                         color: colors.surface2.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.borderSubtle),
+                        border: colors.borderSubtle == Colors.transparent
+                            ? null
+                            : Border.all(color: colors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -244,14 +252,22 @@ class _ProfileDialogState extends State<ProfileDialog> {
                       trailing: Switch(
                         value: appProvider.isDarkMode,
                         activeThumbColor: colors.primary,
-                        onChanged: (_) => appProvider.toggleTheme(),
+                        onChanged: (_) {
+                          HapticFeedback.selectionClick();
+                          appProvider.toggleTheme();
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     // Save Profile Button
                     ElevatedButton(
-                      onPressed: _isSaving ? null : _save,
+                      onPressed: _isSaving
+                          ? null
+                          : () {
+                              HapticFeedback.mediumImpact();
+                              _save();
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.primary,
                         foregroundColor: Colors.white,
@@ -270,6 +286,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     // Log Out Button
                     OutlinedButton.icon(
                       onPressed: () async {
+                        HapticFeedback.mediumImpact();
                         Navigator.pop(context);
                         await authProvider.signOut();
                       },

@@ -136,7 +136,9 @@ class _GoalDialogState extends State<GoalDialog> {
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: colors.borderSubtle == Colors.transparent
+              ? null
+              : Border.all(color: colors.borderSubtle, width: 1),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -241,7 +243,9 @@ class _GoalDialogState extends State<GoalDialog> {
                   decoration: BoxDecoration(
                     color: colors.surface2.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.borderSubtle),
+                    border: colors.borderSubtle == Colors.transparent
+                        ? null
+                        : Border.all(color: colors.borderSubtle),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

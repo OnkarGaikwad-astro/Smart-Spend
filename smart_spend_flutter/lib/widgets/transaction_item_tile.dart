@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/utils.dart';
 import '../models/transaction_model.dart';
 import '../theme/app_theme.dart';
@@ -25,6 +26,7 @@ class TransactionItemTile extends StatelessWidget {
 
     return InkWell(
       onTap: () {
+        HapticFeedback.lightImpact();
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -45,10 +47,12 @@ class TransactionItemTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.surface2,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colors.borderSubtle.withValues(alpha: 0.5),
-                  width: 0.5,
-                ),
+                border: colors.borderSubtle == Colors.transparent
+                    ? null
+                    : Border.all(
+                        color: colors.borderSubtle.withValues(alpha: 0.5),
+                        width: 0.5,
+                      ),
               ),
               alignment: Alignment.center,
               child: Text(

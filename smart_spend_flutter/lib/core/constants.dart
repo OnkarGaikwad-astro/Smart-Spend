@@ -8,7 +8,6 @@ class AppConstants {
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5Z2hxdGh2eHhhZmpheWVrZ3hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDcyNTEsImV4cCI6MjA5NjM4MzI1MX0.t-i1asO4donLYttyp31T-7_WmkYt46AQGMsk3mTKTcc';
 
   // Gemini API Configuration
-  static const String geminiApiKey = 'AIzaSyCxwIBDBZtMspGGTWAo7GSOhF60wCunMYQ';
 
   // Google OAuth / Sign In Configuration
   // Paste your Google Web Client ID from Google Cloud Console if using native one-tap sign in:

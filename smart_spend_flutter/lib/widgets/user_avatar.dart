@@ -33,7 +33,9 @@ class UserAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: effectiveBg,
-        border: borderWidth > 0 ? Border.all(color: effectiveBorder, width: borderWidth) : null,
+        border: (borderWidth > 0 && effectiveBorder != Colors.transparent)
+            ? Border.all(color: effectiveBorder, width: borderWidth)
+            : null,
       ),
       child: ClipOval(
         child: hasValidUrl
