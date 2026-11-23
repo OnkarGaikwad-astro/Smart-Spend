@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'SmartSpend';
-  static const String appTagline = 'AI-Powered Student Finance';
+  static const String appTagline = 'Smart Personal Finance & Wealth Tracker';
 
   // Supabase Configuration
   static const String supabaseUrl = 'https://gyghqthvxxafjayekgxd.supabase.co';
@@ -18,6 +18,7 @@ class AppConstants {
   static const String transactionsBox = 'transactions_box';
   static const String budgetsBox = 'budgets_box';
   static const String goalsBox = 'goals_box';
+  static const String debtsBox = 'debts_box';
   static const String profileBox = 'profile_box';
   static const String syncQueueBox = 'sync_queue_box';
   static const String settingsBox = 'settings_box';

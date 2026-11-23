@@ -3,6 +3,7 @@ import '../core/constants.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
+import '../models/debt_model.dart';
 import '../models/user_profile_model.dart';
 import '../models/sync_queue_item.dart';
 
@@ -14,6 +15,7 @@ class StorageService {
   late Box _transactionsBox;
   late Box _budgetsBox;
   late Box _goalsBox;
+  late Box _debtsBox;
   late Box _profileBox;
   late Box _syncQueueBox;
   late Box _settingsBox;
@@ -21,15 +23,26 @@ class StorageService {
   Future<void> init() async {
     await Hive.initFlutter();
 
-    _transactionsBox = await Hive.openBox(AppConstants.transactionsBox);
-    _budgetsBox = await Hive.openBox(AppConstants.budgetsBox);
-    _goalsBox = await Hive.openBox(AppConstants.goalsBox);
-    _profileBox = await Hive.openBox(AppConstants.profileBox);
-    _syncQueueBox = await Hive.openBox(AppConstants.syncQueueBox);
-    _settingsBox = await Hive.openBox(AppConstants.settingsBox);
+    final boxes = await Future.wait([
+      Hive.openBox(AppConstants.transactionsBox),
+      Hive.openBox(AppConstants.budgetsBox),
+      Hive.openBox(AppConstants.goalsBox),
+      Hive.openBox(AppConstants.debtsBox),
+      Hive.openBox(AppConstants.profileBox),
+      Hive.openBox(AppConstants.syncQueueBox),
+      Hive.openBox(AppConstants.settingsBox),
+    ]);
 
-    if (!_settingsBox.containsKey('dark_aesthetic_applied_v3')) {
-      await _settingsBox.put('dark_aesthetic_applied_v3', true);
+    _transactionsBox = boxes[0];
+    _budgetsBox = boxes[1];
+    _goalsBox = boxes[2];
+    _debtsBox = boxes[3];
+    _profileBox = boxes[4];
+    _syncQueueBox = boxes[5];
+    _settingsBox = boxes[6];
+
+    if (!_settingsBox.containsKey('dark_aesthetic_applied_v4')) {
+      await _settingsBox.put('dark_aesthetic_applied_v4', true);
       await _settingsBox.put('is_dark_mode', true);
     }
   }
@@ -111,6 +124,33 @@ class StorageService {
     await _goalsBox.delete(id);
   }
 
+  // --- Debts (Lent & Borrowed) ---
+  List<DebtModel> getAllDebts() {
+    final list = <DebtModel>[];
+    for (var key in _debtsBox.keys) {
+      final val = _debtsBox.get(key);
+      if (val is Map) {
+        list.add(DebtModel.fromMap(val));
+      }
+    }
+    // Sort descending by most recent activity
+    list.sort((a, b) => b.lastActivityDate.compareTo(a.lastActivityDate));
+    return list;
+  }
+
+  Future<void> saveDebt(DebtModel debt) async {
+    await _debtsBox.put(debt.id, debt.toMap());
+  }
+
+  Future<void> saveAllDebts(List<DebtModel> debts) async {
+    final entries = {for (var d in debts) d.id: d.toMap()};
+    await _debtsBox.putAll(entries);
+  }
+
+  Future<void> deleteDebt(String id) async {
+    await _debtsBox.delete(id);
+  }
+
   // --- User Profile ---
   UserProfileModel? getUserProfile() {
     final val = _profileBox.get('current_profile');
@@ -166,6 +206,7 @@ class StorageService {
     await _transactionsBox.clear();
     await _budgetsBox.clear();
     await _goalsBox.clear();
+    await _debtsBox.clear();
     await _profileBox.clear();
     await _syncQueueBox.clear();
   }

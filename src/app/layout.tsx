@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   applicationName: "SmartSpend AI",
 
   description:
-    "AI-powered personal finance assistant for students. Track expenses, analyze spending, and receive intelligent financial insights.",
+    "AI-powered personal finance assistant and wealth tracker for everyone. Track expenses, analyze spending, and receive intelligent financial insights.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     "AI Finance",
     "Expense Tracker",
     "Budget Planner",
-    "Student Finance",
+    "Smart Finance",
     "Money Management",
     "Personal Finance",
     "Finance AI",

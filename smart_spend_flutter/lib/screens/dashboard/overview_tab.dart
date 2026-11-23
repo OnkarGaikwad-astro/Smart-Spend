@@ -13,10 +13,12 @@ import '../../widgets/transaction_item_tile.dart';
 
 class OverviewTab extends StatelessWidget {
   final VoidCallback onNavigateToTransactions;
+  final VoidCallback? onNavigateToLent;
 
   const OverviewTab({
     super.key,
     required this.onNavigateToTransactions,
+    this.onNavigateToLent,
   });
 
   List<_MonthlyData> _get6MonthsData(AppProvider provider) {
@@ -107,7 +109,73 @@ class OverviewTab extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Money Lent to Friends Quick Banner
+            if (provider.debts.isNotEmpty) ...[
+              InkWell(
+                onTap: onNavigateToLent,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: colors.borderSubtle == Colors.transparent
+                        ? null
+                        : Border.all(color: colors.borderSubtle, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF5350).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.handshake_rounded,
+                          color: Color(0xFFEF5350),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Lent & Borrowed (Khata)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: colors.textMain,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              (provider.totalLentPending > 0 || provider.totalBorrowedPending > 0)
+                                  ? "Get ${AppUtils.formatCurrency(provider.totalLentPending)}  •  Give ${AppUtils.formatCurrency(provider.totalBorrowedPending)}"
+                                  : 'All debts and borrowings settled! 🎉',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: colors.textMuted,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Spending Overview Bar Chart Card
             Container(

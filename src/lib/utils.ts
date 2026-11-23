@@ -46,7 +46,7 @@ export const getIcon = (name: string, type?: 'INCOME' | 'EXPENSE') => {
     case 'bills': case 'utilities': return "💡";
     case 'savings': return "🐷";
     
-    // Income Categories (Student Focus)
+    // Income Categories
     case 'scholarship': return "🎓";
     case 'parents': return "👨‍👩‍👧‍👦";
     case 'sister': return "👧";

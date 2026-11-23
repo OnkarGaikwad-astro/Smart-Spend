@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'AI-Powered Student Finance',
+                              'AI-Powered Personal Finance',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colors.textMuted,

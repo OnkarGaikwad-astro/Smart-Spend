@@ -8,6 +8,7 @@ import '../models/sync_queue_item.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
+import '../models/debt_model.dart';
 import '../models/user_profile_model.dart';
 import 'storage_service.dart';
 
@@ -162,6 +163,19 @@ class SyncService {
             data['user_id'] = user.id;
           }
 
+          // Auto-heal: If syncing a debt_entry, ensure parent debt row is upserted to Supabase first
+          if (item.table == 'debt_entries' && data.containsKey('debt_id')) {
+            final parentDebtId = data['debt_id'];
+            final allDebts = _storage.getAllDebts();
+            final parentDebt =
+                allDebts.where((d) => d.id == parentDebtId).firstOrNull;
+            if (parentDebt != null) {
+              await supabase
+                  .from('debts')
+                  .upsert(parentDebt.toRemoteMap(currentUserId: user.id));
+            }
+          }
+
           if (item.action == 'insert') {
             await table.upsert(data);
           } else if (item.action == 'update') {
@@ -174,7 +188,13 @@ class SyncService {
           await _storage.removeFromSyncQueue(item.id);
         } catch (e) {
           debugPrint('[SyncService] Failed syncing item ${item.id} on table ${item.table}: $e');
-          // If error is network or temporary, keep in queue to retry later
+          // If foreign key constraint violation (code 23503), parent is missing/deleted.
+          // Drop orphaned queue item to prevent permanently jamming the queue.
+          final errStr = e.toString();
+          if (errStr.contains('23503') || errStr.contains('foreign key constraint')) {
+            debugPrint('[SyncService] Dropping orphaned foreign key item ${item.id}');
+            await _storage.removeFromSyncQueue(item.id);
+          }
         }
       }
     } finally {
@@ -273,6 +293,40 @@ class SyncService {
         if (!pendingGoalIds.contains(goal.id)) {
           await _storage.saveGoal(goal);
         }
+      }
+
+      // 5. Fetch Debts & Debt Entries
+      try {
+        final pendingDebtIds = queuedItems
+            .where((i) => i.table == 'debts')
+            .map((i) => i.recordId)
+            .toSet();
+
+        final debtsRes = await supabase.from('debts').select();
+        final entriesRes = await supabase.from('debt_entries').select();
+
+        final entriesList = (entriesRes as List)
+            .map((e) => DebtEntry.fromMap(e))
+            .toList();
+
+        final remoteDebts = (debtsRes as List).map((m) {
+          final debtId = m['id']?.toString() ?? '';
+          final matchingEntries =
+              entriesList.where((e) => e.debtId == debtId).toList();
+          final debtMap = Map<String, dynamic>.from(m);
+          debtMap['entries'] =
+              matchingEntries.map((e) => e.toMap()).toList();
+          return DebtModel.fromMap(debtMap);
+        }).toList();
+
+        for (var debt in remoteDebts) {
+          if (!pendingDebtIds.contains(debt.id)) {
+            await _storage.saveDebt(debt);
+          }
+        }
+      } catch (e) {
+        debugPrint(
+            '[SyncService] Debts pull error (table may not exist in Supabase yet): $e');
       }
     } catch (e) {
       debugPrint('[SyncService] Pull remote data error: $e');

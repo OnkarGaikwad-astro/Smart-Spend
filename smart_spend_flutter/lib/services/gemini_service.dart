@@ -6,10 +6,12 @@ import '../core/constants.dart';
 class AurexChatResult {
   final String text;
   final List<Map<String, dynamic>> actions;
+  final List<Map<String, dynamic>> debtActions;
 
   AurexChatResult({
     required this.text,
     this.actions = const [],
+    this.debtActions = const [],
   });
 }
 
@@ -41,6 +43,14 @@ class GeminiService {
         .map((g) => '- ${g['name']}: ₹${g['saved']} / ₹${g['target']} saved')
         .join('\n');
 
+    final debtsList = (context['debts'] as List? ?? [])
+        .map((d) {
+          final direction = d['type'] == 'BORROWED' ? "You'll Give" : "You'll Get";
+          final status = d['isSettled'] == true ? 'Settled' : 'Pending ₹${d['owed']}';
+          return '- ${d['person']} ($direction): $status (${d['lastNote']})';
+        })
+        .join('\n');
+
     final csvContent = (transactionsCsv != null && transactionsCsv.trim().isNotEmpty)
         ? transactionsCsv.trim()
         : 'Date,Title,Category,Type,Amount (INR)\n(No transactions recorded yet)';
@@ -54,6 +64,11 @@ User's Financial Summary:
 - Total Balance: ₹${context['totalBalance']}
 - Total Income: ₹${context['totalIncome']}
 - Total Expenses: ₹${context['totalExpense']}
+- Total You'll Get (Money Lent to Friends): ₹${context['totalLentPending'] ?? 0}
+- Total You'll Give (Money Borrowed from Others): ₹${context['totalBorrowedPending'] ?? 0}
+
+Lent & Borrowed (Khata / Debts):
+${debtsList.isEmpty ? '- No debts or borrowed money recorded' : debtsList}
 
 Active Savings Goals:
 $goalsList
@@ -63,7 +78,7 @@ ATTACHED TRANSACTIONS CSV FILE (transactions.csv):
 $csvContent
 ```
 
-CAPABILITY - ADDING TRANSACTIONS & INCOME:
+CAPABILITY 1 - ADDING TRANSACTIONS & INCOME:
 You can directly add transactions or income to the user's account!
 When the user asks you to add, log, spend, earn, or record an expense or income (e.g. "add 200 for lunch", "spent 150 on petrol", "add 5000 income from salary", "I earned 1200 freelancing today", "bought groceries for 450 add it"):
 1. In your message, warmly confirm what you have recorded (e.g. "✅ Added expense of ₹200 for Lunch under Food!").
@@ -74,10 +89,30 @@ When the user asks you to add, log, spend, earn, or record an expense or income 
   "amount": <positive number, e.g. 200.0>,
   "type": "<EXPENSE or INCOME>",
   "category": "<Food | Transport | Subscriptions | Entertainment | Shopping | Bills | Salary | Freelance | Investment | Gift | Other>",
-  "date": "<ISO 8601 string, e.g. 2026-11-19T12:00:00>"
+  "date": "<ISO 8601 string, e.g. 2026-11-20T12:00:00>"
 }
 TRANSACTION_ACTION>>>
 If multiple transactions are requested in one prompt, you may output a JSON array of objects inside the block.
+
+CAPABILITY 2 - LENT & BORROWED MONEY (KHATA):
+You can directly record money lent to friends or borrowed from others!
+When the user mentions lending, borrowing, adding more, or repaying:
+- "Lent 500 to Rahul for lunch" / "Rahul borrowed 500 from me" -> action: "LEND"
+- "I borrowed 1000 from Rohit for concert" / "Rohit gave me 1000 loan" -> action: "BORROW"
+- "Rahul borrowed 200 more for auto" / "Borrowed 500 more from Rohit" -> action: "ADD_MORE"
+- "Rahul paid me 300" / "I paid 500 back to Rohit" / "Rahul settled" -> action: "REPAY"
+
+1. In your message, warmly confirm what was recorded (e.g. "✅ Recorded: Lent ₹500 to Rahul for Lunch!").
+2. At the very end of your response, output a DEBT_ACTION block formatted EXACTLY as:
+<<<DEBT_ACTION
+{
+  "action": "<LEND | BORROW | ADD_MORE | REPAY>",
+  "person": "<Person Name>",
+  "amount": <positive number, e.g. 500.0>,
+  "note": "<Description/Reason>",
+  "date": "<ISO 8601 string, e.g. 2026-11-20T12:00:00>"
+}
+DEBT_ACTION>>>
 
 CRITICAL INSTRUCTIONS:
 1. An official transactions.csv file has been attached above containing all user transactions with Date, Title, Category, Type, and Amount.
@@ -159,13 +194,19 @@ $text''';
       r'<<<TRANSACTION_ACTION\s*([\s\S]*?)\s*TRANSACTION_ACTION>>>',
       caseSensitive: false,
     );
-    final match = actionRegex.firstMatch(raw);
+    final debtActionRegex = RegExp(
+      r'<<<DEBT_ACTION\s*([\s\S]*?)\s*DEBT_ACTION>>>',
+      caseSensitive: false,
+    );
+
     List<Map<String, dynamic>> actions = [];
+    List<Map<String, dynamic>> debtActions = [];
     String cleanText = raw;
 
+    final match = actionRegex.firstMatch(cleanText);
     if (match != null) {
       final jsonBlock = match.group(1)?.trim() ?? '';
-      cleanText = raw.replaceAll(actionRegex, '').trim();
+      cleanText = cleanText.replaceAll(actionRegex, '').trim();
       try {
         final parsed = jsonDecode(jsonBlock);
         if (parsed is List) {
@@ -178,9 +219,26 @@ $text''';
       }
     }
 
+    final debtMatch = debtActionRegex.firstMatch(cleanText);
+    if (debtMatch != null) {
+      final jsonBlock = debtMatch.group(1)?.trim() ?? '';
+      cleanText = cleanText.replaceAll(debtActionRegex, '').trim();
+      try {
+        final parsed = jsonDecode(jsonBlock);
+        if (parsed is List) {
+          debtActions = List<Map<String, dynamic>>.from(parsed);
+        } else if (parsed is Map) {
+          debtActions = [Map<String, dynamic>.from(parsed)];
+        }
+      } catch (e) {
+        debugPrint('[GeminiService] Failed to parse debt action: $e');
+      }
+    }
+
     return AurexChatResult(
-      text: cleanText.isEmpty ? 'Transaction recorded successfully!' : cleanText,
+      text: cleanText.isEmpty ? 'Action recorded successfully!' : cleanText,
       actions: actions,
+      debtActions: debtActions,
     );
   }
 

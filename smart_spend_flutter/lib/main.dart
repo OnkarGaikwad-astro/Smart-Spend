@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,24 +9,34 @@ import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_shell.dart';
-import 'screens/splash/splash_screen.dart';
+import 'screens/quick_add/quick_add_screen.dart';
+import 'screens/quick_add/quick_add_debt_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
+import 'services/widget_sync_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
+  // Initialize essential storage, orientation, and Supabase client concurrently
+  await Future.wait([
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]),
+    StorageService().init(),
+    _initSupabase(),
   ]);
 
-  // 1. Initialize Local Storage (Hive)
-  await StorageService().init();
+  // Non-blocking background sync and widget service init
+  unawaited(SyncService().init());
+  WidgetSyncService().init();
 
-  // 2. Initialize Supabase
+  runApp(const SmartSpendApp());
+}
+
+Future<void> _initSupabase() async {
   try {
     await Supabase.initialize(
       url: AppConstants.supabaseUrl,
@@ -37,11 +48,6 @@ void main() async {
   } catch (e) {
     debugPrint('[Main] Supabase initialization warning (e.g. offline): $e');
   }
-
-  // 3. Initialize Offline Sync Service
-  await SyncService().init();
-
-  runApp(const SmartSpendApp());
 }
 
 class SmartSpendApp extends StatelessWidget {
@@ -63,7 +69,32 @@ class SmartSpendApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode:
                 appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const SplashScreen(),
+            home: const RootGatekeeper(),
+            onGenerateRoute: (settings) {
+              final uri = Uri.parse(settings.name ?? '/');
+              final path = uri.path;
+              if (path == '/quick-add' || path.contains('quick-add')) {
+                final type = uri.queryParameters['type'] ?? 'EXPENSE';
+                return PageRouteBuilder(
+                  opaque: false,
+                  barrierColor: Colors.black45,
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      QuickAddScreen(initialType: type),
+                );
+              }
+              if (path == '/quick-add-debt' || path.contains('quick-add-debt')) {
+                final type = uri.queryParameters['type'] ?? 'LENT';
+                return PageRouteBuilder(
+                  opaque: false,
+                  barrierColor: Colors.black45,
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      QuickAddDebtScreen(initialType: type),
+                );
+              }
+              return MaterialPageRoute(
+                builder: (_) => const RootGatekeeper(),
+              );
+            },
           );
         },
       ),

@@ -5,9 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
+import '../models/debt_model.dart';
 import '../models/user_profile_model.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
+import '../services/widget_sync_service.dart';
 
 class AppProvider extends ChangeNotifier {
   final StorageService _storage = StorageService();
@@ -17,6 +19,7 @@ class AppProvider extends ChangeNotifier {
   List<TransactionModel> _transactions = [];
   List<BudgetModel> _budgets = [];
   List<GoalModel> _goals = [];
+  List<DebtModel> _debts = [];
   UserProfileModel? _userProfile;
   bool _isLoading = false;
   bool _isDarkMode = true;
@@ -24,6 +27,7 @@ class AppProvider extends ChangeNotifier {
   List<TransactionModel> get transactions => _transactions;
   List<BudgetModel> get budgets => _budgets;
   List<GoalModel> get goals => _goals;
+  List<DebtModel> get debts => _debts;
   UserProfileModel? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
   bool get isDarkMode => _isDarkMode;
@@ -46,6 +50,12 @@ class AppProvider extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    super.notifyListeners();
+    WidgetSyncService().updateWidgets(this);
+  }
+
+  @override
   void dispose() {
     _syncService.isOnlineNotifier.removeListener(_onSyncStatusChanged);
     _syncService.isSyncingNotifier.removeListener(_onSyncStatusChanged);
@@ -57,6 +67,7 @@ class AppProvider extends ChangeNotifier {
     _transactions = _storage.getAllTransactions();
     _budgets = _storage.getAllBudgets();
     _goals = _storage.getAllGoals();
+    _debts = _storage.getAllDebts();
     _userProfile = _storage.getUserProfile();
     notifyListeners();
   }
@@ -84,6 +95,14 @@ class AppProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> syncNow() async {
+    if (_syncService.isOnline) {
+      await _syncService.syncAll();
+      _loadFromLocal();
+      notifyListeners();
+    }
   }
 
   // --- Transactions ---
@@ -337,6 +356,230 @@ class AppProvider extends ChangeNotifier {
     for (final goal in _goals) {
       await depositToGoal(goal.id, sweepPerGoal);
     }
+  }
+
+  // --- Debts (Lent to Friends & Borrowed from Others) ---
+  /// Total money others owe you (You'll Get)
+  double get totalLentPending =>
+      _debts.where((d) => d.isLent).fold(0.0, (sum, d) => sum + d.totalOwed);
+
+  /// Total money you owe to others (You'll Give)
+  double get totalBorrowedPending =>
+      _debts.where((d) => d.isBorrowed).fold(0.0, (sum, d) => sum + d.totalOwed);
+
+  /// Net balance (+ if you are owed more, - if you owe more)
+  double get netDebtsBalance => totalLentPending - totalBorrowedPending;
+
+  /// Total money recovered from people who borrowed from you
+  double get totalLentRecovered =>
+      _debts.where((d) => d.isLent).fold(0.0, (sum, d) => sum + d.totalRepaid);
+
+  /// Total money repaid to people you borrowed from
+  double get totalBorrowedRepaid =>
+      _debts.where((d) => d.isBorrowed).fold(0.0, (sum, d) => sum + d.totalRepaid);
+
+  int get activeBorrowersCount =>
+      _debts.where((d) => !d.isSettled).length;
+
+  int get activeDebtsCount =>
+      _debts.where((d) => !d.isSettled).length;
+
+  int get activeLentCount =>
+      _debts.where((d) => d.isLent && !d.isSettled).length;
+
+  int get activeBorrowedCount =>
+      _debts.where((d) => d.isBorrowed && !d.isSettled).length;
+
+  Future<void> addDebtPerson({
+    required String personName,
+    String? phoneNumber,
+    required double initialAmount,
+    required String note,
+    DateTime? date,
+    String type = 'LENT', // 'LENT' (They owe me) or 'BORROWED' (I owe them)
+  }) async {
+    final entryDate = date ?? DateTime.now();
+    final debtId = _uuid.v4();
+    final entryType = type.toUpperCase() == 'BORROWED' ? 'BORROWED' : 'LENT';
+
+    final firstEntry = DebtEntry(
+      id: _uuid.v4(),
+      debtId: debtId,
+      amount: initialAmount.abs(),
+      type: entryType,
+      note: note.trim().isEmpty
+          ? (entryType == 'BORROWED' ? 'Borrowed money' : 'Lent money')
+          : note.trim(),
+      date: entryDate,
+    );
+
+    final debt = DebtModel(
+      id: debtId,
+      userId: _currentUserId,
+      personName: personName.trim(),
+      phoneNumber: phoneNumber?.trim(),
+      type: entryType,
+      entries: [firstEntry],
+      createdAt: entryDate,
+      updatedAt: entryDate,
+    );
+
+    _debts.insert(0, debt);
+    await _storage.saveDebt(debt);
+    notifyListeners();
+
+    // Enqueue cloud sync to Supabase
+    await _syncService.enqueueInsert(
+      table: 'debts',
+      recordId: debt.id,
+      data: debt.toRemoteMap(currentUserId: _currentUserId),
+    );
+    await _syncService.enqueueInsert(
+      table: 'debt_entries',
+      recordId: firstEntry.id,
+      data: firstEntry.toRemoteMap(currentUserId: _currentUserId),
+    );
+  }
+
+  Future<void> addMoreToDebt({
+    required String debtId,
+    required double amount,
+    required String note,
+    DateTime? date,
+  }) async {
+    final index = _debts.indexWhere((d) => d.id == debtId);
+    if (index == -1) return;
+
+    final current = _debts[index];
+    final entryDate = date ?? DateTime.now();
+    final entryType = current.isBorrowed ? 'BORROWED' : 'LENT';
+
+    final newEntry = DebtEntry(
+      id: _uuid.v4(),
+      debtId: debtId,
+      amount: amount.abs(),
+      type: entryType,
+      note: note.trim().isEmpty
+          ? (current.isBorrowed ? 'Borrowed more' : 'Lent more')
+          : note.trim(),
+      date: entryDate,
+    );
+
+    final updatedEntries = List<DebtEntry>.from(current.entries)..add(newEntry);
+    final updatedDebt = current.copyWith(
+      entries: updatedEntries,
+      updatedAt: DateTime.now(),
+    );
+
+    _debts[index] = updatedDebt;
+    _debts.sort((a, b) => b.lastActivityDate.compareTo(a.lastActivityDate));
+    await _storage.saveDebt(updatedDebt);
+    notifyListeners();
+
+    // Enqueue cloud sync
+    await _syncService.enqueueInsert(
+      table: 'debt_entries',
+      recordId: newEntry.id,
+      data: newEntry.toRemoteMap(currentUserId: _currentUserId),
+    );
+    await _syncService.enqueueUpdate(
+      table: 'debts',
+      recordId: debtId,
+      data: {'updated_at': updatedDebt.updatedAt.toIso8601String()},
+    );
+  }
+
+  Future<void> recordDebtRepayment({
+    required String debtId,
+    required double amount,
+    required String note,
+    DateTime? date,
+  }) async {
+    final index = _debts.indexWhere((d) => d.id == debtId);
+    if (index == -1) return;
+
+    final current = _debts[index];
+    final entryDate = date ?? DateTime.now();
+    final newEntry = DebtEntry(
+      id: _uuid.v4(),
+      debtId: debtId,
+      amount: amount.abs(),
+      type: 'REPAID',
+      note: note.trim().isEmpty ? 'Repayment' : note.trim(),
+      date: entryDate,
+    );
+
+    final updatedEntries = List<DebtEntry>.from(current.entries)..add(newEntry);
+    final updatedDebt = current.copyWith(
+      entries: updatedEntries,
+      updatedAt: DateTime.now(),
+    );
+
+    _debts[index] = updatedDebt;
+    _debts.sort((a, b) => b.lastActivityDate.compareTo(a.lastActivityDate));
+    await _storage.saveDebt(updatedDebt);
+    notifyListeners();
+
+    // Enqueue cloud sync
+    await _syncService.enqueueInsert(
+      table: 'debt_entries',
+      recordId: newEntry.id,
+      data: newEntry.toRemoteMap(currentUserId: _currentUserId),
+    );
+    await _syncService.enqueueUpdate(
+      table: 'debts',
+      recordId: debtId,
+      data: {'updated_at': updatedDebt.updatedAt.toIso8601String()},
+    );
+  }
+
+  Future<void> settleDebt(String debtId) async {
+    final index = _debts.indexWhere((d) => d.id == debtId);
+    if (index == -1) return;
+
+    final current = _debts[index];
+    if (current.totalOwed <= 0) return;
+
+    final settleEntry = DebtEntry(
+      id: _uuid.v4(),
+      debtId: debtId,
+      amount: current.totalOwed,
+      type: 'REPAID',
+      note: 'Settled in full',
+      date: DateTime.now(),
+    );
+
+    final updatedEntries = List<DebtEntry>.from(current.entries)..add(settleEntry);
+    final updatedDebt = current.copyWith(
+      entries: updatedEntries,
+      updatedAt: DateTime.now(),
+    );
+
+    _debts[index] = updatedDebt;
+    await _storage.saveDebt(updatedDebt);
+    notifyListeners();
+
+    await _syncService.enqueueInsert(
+      table: 'debt_entries',
+      recordId: settleEntry.id,
+      data: settleEntry.toRemoteMap(currentUserId: _currentUserId),
+    );
+    await _syncService.enqueueUpdate(
+      table: 'debts',
+      recordId: debtId,
+      data: {'updated_at': updatedDebt.updatedAt.toIso8601String()},
+    );
+  }
+
+  Future<void> deleteDebt(String debtId) async {
+    _debts.removeWhere((d) => d.id == debtId);
+    await _storage.deleteDebt(debtId);
+    notifyListeners();
+
+    await _syncService.enqueueDelete(
+      table: 'debts',
+      recordId: debtId,
+    );
   }
 
   // --- Profile ---

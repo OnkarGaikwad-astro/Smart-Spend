@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_quick_transaction_title">SmartSpend: Quick Transactions</string>
+    <string name="widget_quick_transaction_desc">Track balance and quickly add expenses or income directly from home screen.</string>
+    <string name="widget_debts_title">SmartSpend: Lent &amp; Borrowed</string>
+    <string name="widget_debts_desc">See pending lent and borrowed money and quickly log new debts.</string>
+</resources>

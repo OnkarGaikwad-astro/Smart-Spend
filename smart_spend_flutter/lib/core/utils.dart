@@ -20,6 +20,10 @@ class AppUtils {
     return _currencyFormat.format(amount);
   }
 
+  static String formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
   static String formatDateDDMMYYYY(DateTime date) {
     return DateFormat('dd/MM/yyyy').format(date);
   }
@@ -68,7 +72,7 @@ class AppUtils {
       case 'savings':
         return '🐷';
 
-      // Income Categories (Student Focus)
+      // Income Categories
       case 'scholarship':
         return '🎓';
       case 'parents':

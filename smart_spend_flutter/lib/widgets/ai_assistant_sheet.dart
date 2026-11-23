@@ -30,10 +30,11 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
   bool _isLoading = false;
 
   final List<String> _quickPrompts = [
+    'Who owes me money?',
+    'Lent ₹500 to Rahul for lunch',
+    'I borrowed ₹1000 from Rohit',
     'How much did I spend this month?',
     'Add expense: ₹250 for Lunch',
-    'Add income: ₹5000 Freelance',
-    'Give me a student budget tip',
   ];
 
   @override
@@ -106,6 +107,20 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
       'totalBalance': provider.totalBalance,
       'totalIncome': provider.totalIncome,
       'totalExpense': provider.totalExpense,
+      'totalLentPending': provider.totalLentPending,
+      'totalBorrowedPending': provider.totalBorrowedPending,
+      'debts': provider.debts
+          .map((d) => {
+                'person': d.personName,
+                'type': d.type,
+                'owed': d.totalOwed,
+                'isSettled': d.isSettled,
+                'lastNote': d.lastNote,
+                'entries': d.entries
+                    .map((e) => '${e.type}: ₹${e.amount} (${e.note})')
+                    .toList(),
+              })
+          .toList(),
       'goals': provider.goals
           .map((g) => {
                 'name': g.name,
@@ -163,12 +178,105 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
       }
     }
 
+    // If Gemini instructed to perform any Debt / Lent actions, execute them now
+    final List<Map<String, dynamic>> addedDebts = [];
+    if (result.debtActions.isNotEmpty) {
+      HapticFeedback.mediumImpact();
+      for (final dAct in result.debtActions) {
+        final action = dAct['action']?.toString().toUpperCase() ?? 'LEND';
+        final person = dAct['person']?.toString().trim() ?? 'Unknown';
+        final amt = (dAct['amount'] is num)
+            ? (dAct['amount'] as num).toDouble()
+            : double.tryParse(dAct['amount']?.toString() ?? '0') ?? 0.0;
+        final note = dAct['note']?.toString().trim() ?? '';
+        final date =
+            DateTime.tryParse(dAct['date']?.toString() ?? '') ?? DateTime.now();
+
+        if (amt > 0 && person.isNotEmpty) {
+          final existingIndex = provider.debts.indexWhere(
+            (d) => d.personName.toLowerCase() == person.toLowerCase(),
+          );
+
+          if (action == 'REPAY') {
+            if (existingIndex != -1) {
+              await provider.recordDebtRepayment(
+                debtId: provider.debts[existingIndex].id,
+                amount: amt,
+                note: note.isEmpty ? 'Repayment' : note,
+                date: date,
+              );
+            }
+          } else if (action == 'BORROW') {
+            if (existingIndex != -1 && provider.debts[existingIndex].isBorrowed) {
+              await provider.addMoreToDebt(
+                debtId: provider.debts[existingIndex].id,
+                amount: amt,
+                note: note.isEmpty ? 'Borrowed more' : note,
+                date: date,
+              );
+            } else {
+              await provider.addDebtPerson(
+                personName: person,
+                initialAmount: amt,
+                note: note.isEmpty ? 'Borrowed money' : note,
+                date: date,
+                type: 'BORROWED',
+              );
+            }
+          } else if (action == 'ADD_MORE') {
+            if (existingIndex != -1) {
+              await provider.addMoreToDebt(
+                debtId: provider.debts[existingIndex].id,
+                amount: amt,
+                note: note.isEmpty ? 'Additional' : note,
+                date: date,
+              );
+            } else {
+              await provider.addDebtPerson(
+                personName: person,
+                initialAmount: amt,
+                note: note.isEmpty ? 'Lent money' : note,
+                date: date,
+                type: 'LENT',
+              );
+            }
+          } else {
+            // LEND
+            if (existingIndex != -1 && provider.debts[existingIndex].isLent) {
+              await provider.addMoreToDebt(
+                debtId: provider.debts[existingIndex].id,
+                amount: amt,
+                note: note.isEmpty ? 'Lent more' : note,
+                date: date,
+              );
+            } else {
+              await provider.addDebtPerson(
+                personName: person,
+                initialAmount: amt,
+                note: note.isEmpty ? 'Lent money' : note,
+                date: date,
+                type: 'LENT',
+              );
+            }
+          }
+
+          addedDebts.add({
+            'action': action,
+            'person': person,
+            'amount': amt,
+            'note': note,
+          });
+        }
+      }
+    }
+
     if (mounted) {
       setState(() {
         _messages.add({
           'role': 'ai',
           'content': result.text,
           if (addedTxns.isNotEmpty) 'actions': addedTxns,
+          if (addedDebts.isNotEmpty) 'debtActions': addedDebts,
         });
         _isLoading = false;
       });
@@ -502,6 +610,76 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                                               children: [
                                                 Text(
                                                   '${action['category']}  •  Recorded',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: colors.textMuted,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  size: 11,
+                                                  color: Color(0xFF66BB6A),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                              if (msg['debtActions'] != null &&
+                                  (msg['debtActions'] as List).isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                for (final dAct in (msg['debtActions'] as List))
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: (dAct['action'] == 'BORROW'
+                                              ? const Color(0xFFEF5350)
+                                              : colors.primary)
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: (dAct['action'] == 'BORROW'
+                                                ? const Color(0xFFEF5350)
+                                                : colors.primary)
+                                            .withValues(alpha: 0.28),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.handshake_rounded,
+                                          size: 15,
+                                          color: dAct['action'] == 'BORROW'
+                                              ? const Color(0xFFEF5350)
+                                              : colors.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${dAct['action'] == 'BORROW' ? 'Borrowed from' : (dAct['action'] == 'REPAY' ? 'Repayment' : 'Lent to')} ${dAct['person']} • ₹${(dAct['amount'] as num).toStringAsFixed(0)}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: colors.textMain,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Khata / Debts  •  Recorded',
                                                   style: TextStyle(
                                                     fontSize: 10,
                                                     color: colors.textMuted,

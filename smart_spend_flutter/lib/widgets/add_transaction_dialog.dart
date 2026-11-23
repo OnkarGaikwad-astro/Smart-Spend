@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,8 +12,15 @@ import '../theme/app_theme.dart';
 
 class AddTransactionDialog extends StatefulWidget {
   final TransactionModel? transactionToEdit;
+  final String? initialType;
+  final VoidCallback? onComplete;
 
-  const AddTransactionDialog({super.key, this.transactionToEdit});
+  const AddTransactionDialog({
+    super.key,
+    this.transactionToEdit,
+    this.initialType,
+    this.onComplete,
+  });
 
   @override
   State<AddTransactionDialog> createState() => _AddTransactionDialogState();
@@ -34,7 +40,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   void initState() {
     super.initState();
     final edit = widget.transactionToEdit;
-    _type = edit?.type ?? 'EXPENSE';
+    _type = widget.initialType ?? edit?.type ?? 'EXPENSE';
     _amountController =
         TextEditingController(text: edit != null ? edit.amount.abs().toString() : '');
     _titleController = TextEditingController(text: edit?.title ?? '');
@@ -213,6 +219,14 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
     });
   }
 
+  void _dismiss() {
+    if (widget.onComplete != null) {
+      widget.onComplete!();
+    } else if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   Future<void> _submit() async {
     HapticFeedback.mediumImpact();
     final amtText = _amountController.text.trim();
@@ -255,7 +269,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       );
     }
 
-    if (mounted) Navigator.pop(context);
+    _dismiss();
   }
 
   Future<void> _delete() async {
@@ -282,7 +296,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
     if (confirm == true && mounted) {
       final provider = context.read<AppProvider>();
       await provider.deleteTransaction(widget.transactionToEdit!.id);
-      if (mounted) Navigator.pop(context);
+      _dismiss();
     }
   }
 
@@ -363,7 +377,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         icon: Icon(Icons.close_rounded, color: colors.textMuted),
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          Navigator.pop(context);
+                          _dismiss();
                         },
                       ),
                     ],

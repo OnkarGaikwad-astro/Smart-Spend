@@ -26,7 +26,7 @@ export default function Home() {
       <div className="max-w-5xl w-full text-center space-y-8 z-10 mt-12 md:mt-24 flex flex-col items-center">
         <h1 className="inline-flex items-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface)] shadow-sm px-4 py-1.5 text-[13px] font-medium text-[var(--color-text-main)] transition-all hover:shadow-md">
           <Sparkles className="w-4 h-4 text-[var(--color-primary-main)] mr-2" />
-          SmartSpend AI — The Future of Student Finance
+          SmartSpend AI — The Future of Personal Finance
         </h1>
         
         <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[var(--color-text-main)] leading-[1.1]">
@@ -37,7 +37,7 @@ export default function Home() {
         </h2>
         
         <p className="text-lg md:text-xl text-[var(--color-text-muted)] max-w-2xl mx-auto leading-relaxed">
-          The most beautiful, intelligent personal finance tracker designed exclusively for college students. Track expenses, crush budgets, and let AI analyze your spending habits.
+          The most beautiful, intelligent personal finance tracker designed for everyone. Track expenses, crush budgets, manage debts, and let AI analyze your spending habits.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
@@ -85,7 +85,7 @@ export default function Home() {
           Designed and built with ❤️ by <span className="text-[var(--color-text-main)] font-bold">Onkar Gaikwad</span>.
         </p>
         <p className="text-[13px] text-[var(--color-text-muted)] mt-2 max-w-lg">
-          A personal finance tracker built to help college students manage their money effectively using the power of AI.
+          A personal finance tracker built to help you manage your money, savings, and debts effectively using the power of AI.
         </p>
         <div className="flex gap-4 mt-4 text-[13px] font-medium">
           <a href="https://github.com/OnkarGaikwad-astro" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-muted)] hover:text-[var(--color-primary-main)] transition-colors">
