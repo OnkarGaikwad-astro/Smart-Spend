@@ -8,6 +8,9 @@ import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { BudgetModal } from "@/components/BudgetModal";
 import { GoalModal } from "@/components/GoalModal";
 import { DepositModal } from "@/components/DepositModal";
+import { AddDebtModal } from "@/components/AddDebtModal";
+import { RecordRepaymentModal } from "@/components/RecordRepaymentModal";
+import { DebtDetailsModal } from "@/components/DebtDetailsModal";
 import AIAssistantWidget from "@/components/AIAssistantWidget";
 import { useAppStore } from "@/lib/store";
 
@@ -23,7 +26,26 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { userProfile, isAddModalOpen, setAddModalOpen, isBudgetModalOpen, setBudgetModalOpen, isGoalModalOpen, setGoalModalOpen, isDepositModalOpen, setDepositModalOpen, setProfileModalOpen, theme, toggleTheme } = useAppStore();
+  const {
+    userProfile,
+    isAddModalOpen,
+    setAddModalOpen,
+    isBudgetModalOpen,
+    setBudgetModalOpen,
+    isGoalModalOpen,
+    setGoalModalOpen,
+    isDepositModalOpen,
+    setDepositModalOpen,
+    setProfileModalOpen,
+    isAddDebtModalOpen,
+    setAddDebtModalOpen,
+    isRepaymentModalOpen,
+    setRepaymentModalOpen,
+    isDebtDetailsModalOpen,
+    setDebtDetailsModalOpen,
+    theme,
+    toggleTheme,
+  } = useAppStore();
 
   const getInitials = () => {
     if (userProfile?.full_name) {
@@ -51,6 +73,7 @@ export default function DashboardLayout({
           <div className="hidden md:flex items-center space-x-1">
             <Link href="/dashboard" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Overview</Link>
             <Link href="/dashboard/transactions" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/transactions' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Transactions</Link>
+            <Link href="/dashboard/debts" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/debts' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Debts</Link>
             <Link href="/dashboard/budget" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/budget' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Budget & Goals</Link>
             <Link href="/dashboard/analytics" className={`px-4 py-2 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/analytics' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Analytics</Link>
           </div>
@@ -88,6 +111,7 @@ export default function DashboardLayout({
         <div className="md:hidden flex overflow-x-auto px-4 py-2 gap-2 hide-scrollbar border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)]">
             <Link href="/dashboard" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Overview</Link>
             <Link href="/dashboard/transactions" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/transactions' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Transactions</Link>
+            <Link href="/dashboard/debts" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/debts' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Debts</Link>
             <Link href="/dashboard/budget" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/budget' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Budget & Goals</Link>
             <Link href="/dashboard/analytics" className={`whitespace-nowrap px-4 py-1.5 text-[13px] font-medium rounded-full transition-colors ${pathname === '/dashboard/analytics' ? 'bg-[var(--color-surface-2)] text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)]'}`}>Analytics</Link>
         </div>
@@ -103,6 +127,9 @@ export default function DashboardLayout({
       <BudgetModal isOpen={isBudgetModalOpen} onClose={() => setBudgetModalOpen(false)} />
       <GoalModal isOpen={isGoalModalOpen} onClose={() => setGoalModalOpen(false)} />
       <DepositModal isOpen={isDepositModalOpen} onClose={() => setDepositModalOpen(false)} />
+      <AddDebtModal isOpen={isAddDebtModalOpen} onClose={() => setAddDebtModalOpen(false)} />
+      <RecordRepaymentModal isOpen={isRepaymentModalOpen} onClose={() => setRepaymentModalOpen(false)} />
+      <DebtDetailsModal isOpen={isDebtDetailsModalOpen} onClose={() => setDebtDetailsModalOpen(false)} />
       
       {/* Mobile Floating Action Button */}
       <motion.button 

@@ -48,6 +48,12 @@ ${(context.transactions || []).map((t: any) => `- ${t.date ? t.date.split('T')[0
 Active Goals:
 ${(context.goals || []).map((g: any) => `- ${g.name}: ₹${g.saved} / ₹${g.target} saved`).join('\n')}
 
+Lent & Borrowed Debts (Khata Ledger):
+${(context.debts || []).map((d: any) => {
+  const owed = (d.entries || []).reduce((acc: number, e: any) => e.type === 'REPAID' ? acc - e.amount : acc + e.amount, 0);
+  return `- ${d.person_name} (${d.type === 'LENT' ? "User lent to them / They owe user" : "User borrowed from them / User owes them"}): ₹${Math.max(0, owed)} pending. Phone: ${d.phone_number || 'N/A'}`;
+}).join('\n')}
+
 Please use this context to answer the user's questions in a short, conversational, and helpful manner. Avoid huge blocks of text. Use emojis occasionally!
 `;
     }

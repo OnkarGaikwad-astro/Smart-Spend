@@ -30,6 +30,62 @@ export type Goal = {
   color: string;
 };
 
+export type DebtEntry = {
+  id: string;
+  debt_id?: string;
+  amount: number;
+  type: 'LENT' | 'BORROWED' | 'REPAID';
+  note: string;
+  date: string;
+};
+
+export type Debt = {
+  id: string;
+  user_id?: string;
+  person_name: string;
+  phone_number?: string | null;
+  type: 'LENT' | 'BORROWED'; // 'LENT' (You'll Get) or 'BORROWED' (You'll Give)
+  entries: DebtEntry[];
+  created_at: string;
+  updated_at: string;
+};
+
+export const getDebtTotalOwed = (debt: Debt): number => {
+  let total = 0;
+  for (const entry of debt.entries) {
+    if (entry.type === 'LENT' || entry.type === 'BORROWED') {
+      total += entry.amount;
+    } else if (entry.type === 'REPAID') {
+      total -= entry.amount;
+    }
+  }
+  return Math.max(0, total);
+};
+
+export const getDebtTotalPrincipal = (debt: Debt): number => {
+  let total = 0;
+  for (const entry of debt.entries) {
+    if (entry.type === 'LENT' || entry.type === 'BORROWED') {
+      total += entry.amount;
+    }
+  }
+  return total;
+};
+
+export const getDebtTotalRepaid = (debt: Debt): number => {
+  let total = 0;
+  for (const entry of debt.entries) {
+    if (entry.type === 'REPAID') {
+      total += entry.amount;
+    }
+  }
+  return total;
+};
+
+export const isDebtSettled = (debt: Debt): boolean => {
+  return getDebtTotalOwed(debt) <= 0 && debt.entries.length > 0;
+};
+
 export type UserProfile = {
   id: string;
   email: string;
@@ -42,6 +98,7 @@ interface AppState {
   transactions: Transaction[];
   budgets: Budget[];
   goals: Goal[];
+  debts: Debt[];
   isLoading: boolean;
   
   isAddModalOpen: boolean;
@@ -57,6 +114,12 @@ interface AppState {
   activeGoalForDeposit: Goal | null;
 
   isProfileModalOpen: boolean;
+
+  isAddDebtModalOpen: boolean;
+  isRepaymentModalOpen: boolean;
+  activeDebtForAction: Debt | null;
+  isDebtDetailsModalOpen: boolean;
+  activeDebtForDetails: Debt | null;
   
   isAIOpen: boolean;
   aiInitialMsg: string;
@@ -71,6 +134,9 @@ interface AppState {
   setGoalModalOpen: (open: boolean, goal?: Goal) => void;
   setDepositModalOpen: (open: boolean, goal?: Goal) => void;
   setProfileModalOpen: (open: boolean) => void;
+  setAddDebtModalOpen: (open: boolean) => void;
+  setRepaymentModalOpen: (open: boolean, debt?: Debt) => void;
+  setDebtDetailsModalOpen: (open: boolean, debt?: Debt) => void;
   setAIOpen: (open: boolean, msg?: string) => void;
 
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
@@ -87,6 +153,11 @@ interface AppState {
   deleteGoal: (id: string) => Promise<void>;
   depositToGoal: (id: string, amount: number) => Promise<void>;
   sweepLeftover: () => Promise<void>;
+
+  addDebt: (data: { person_name: string; phone_number?: string; type: 'LENT' | 'BORROWED'; initial_amount: number; note?: string }) => Promise<void>;
+  addDebtEntry: (debtId: string, entry: { amount: number; type: 'LENT' | 'BORROWED' | 'REPAID'; note: string; date?: string }) => Promise<void>;
+  deleteDebt: (debtId: string) => Promise<void>;
+  deleteDebtEntry: (debtId: string, entryId: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -96,6 +167,7 @@ export const useAppStore = create<AppState>()(
   transactions: [],
   budgets: [],
   goals: [],
+  debts: [],
   isLoading: false,
   
   isAddModalOpen: false,
@@ -111,6 +183,12 @@ export const useAppStore = create<AppState>()(
   activeGoalForDeposit: null,
 
   isProfileModalOpen: false,
+
+  isAddDebtModalOpen: false,
+  isRepaymentModalOpen: false,
+  activeDebtForAction: null,
+  isDebtDetailsModalOpen: false,
+  activeDebtForDetails: null,
   
   isAIOpen: false,
   aiInitialMsg: '',
@@ -130,6 +208,9 @@ export const useAppStore = create<AppState>()(
   setGoalModalOpen: (open, goal = undefined) => set({ isGoalModalOpen: open, editingGoal: goal || null }),
   setDepositModalOpen: (open, goal = undefined) => set({ isDepositModalOpen: open, activeGoalForDeposit: goal || null }),
   setProfileModalOpen: (open) => set({ isProfileModalOpen: open }),
+  setAddDebtModalOpen: (open) => set({ isAddDebtModalOpen: open }),
+  setRepaymentModalOpen: (open, debt = undefined) => set({ isRepaymentModalOpen: open, activeDebtForAction: debt || null }),
+  setDebtDetailsModalOpen: (open, debt = undefined) => set({ isDebtDetailsModalOpen: open, activeDebtForDetails: debt || null }),
   setAIOpen: (open, msg = '') => set({ isAIOpen: open, aiInitialMsg: msg }),
 
   fetchData: async () => {
@@ -166,6 +247,18 @@ export const useAppStore = create<AppState>()(
       if (!txnsError && txns) set({ transactions: txns as Transaction[] });
       if (!budgetsError && budgets) set({ budgets: budgets as Budget[] });
       if (!goalsError && goals) set({ goals: goals as Goal[] });
+
+      // Fetch Debts & Debt Entries
+      const { data: debtsData, error: debtsError } = await supabase.from('debts').select('*').order('updated_at', { ascending: false });
+      const { data: entriesData, error: entriesError } = await supabase.from('debt_entries').select('*').order('date', { ascending: true });
+
+      if (!debtsError && debtsData) {
+        const assembledDebts: Debt[] = debtsData.map((d: any) => ({
+          ...d,
+          entries: (entriesData || []).filter((e: any) => e.debt_id === d.id) as DebtEntry[]
+        }));
+        set({ debts: assembledDebts });
+      }
     } catch (e) {
       console.error("Failed to fetch data.", e);
     } finally {
@@ -404,6 +497,155 @@ export const useAppStore = create<AppState>()(
     for (const goal of state.goals) {
       await state.depositToGoal(goal.id, sweepPerGoal);
     }
+  },
+
+  addDebt: async ({ person_name, phone_number, type, initial_amount, note }) => {
+    const tempDebtId = Math.random().toString(36).substring(7);
+    const tempEntryId = Math.random().toString(36).substring(7);
+    const now = new Date().toISOString();
+
+    const initialEntry: DebtEntry = {
+      id: tempEntryId,
+      debt_id: tempDebtId,
+      amount: initial_amount,
+      type: type,
+      note: note || (type === 'LENT' ? 'Lent money' : 'Borrowed money'),
+      date: now,
+    };
+
+    const newDebt: Debt = {
+      id: tempDebtId,
+      person_name,
+      phone_number: phone_number || null,
+      type,
+      entries: [initialEntry],
+      created_at: now,
+      updated_at: now,
+    };
+
+    set((state) => ({ debts: [newDebt, ...state.debts] }));
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const debtPayload = {
+        person_name,
+        phone_number: phone_number || null,
+        type,
+        ...(user?.id ? { user_id: user.id } : {})
+      };
+
+      const { data: createdDebt, error: dErr } = await supabase.from('debts').insert([debtPayload]).select().single();
+      if (dErr) throw dErr;
+
+      if (createdDebt) {
+        const entryPayload = {
+          debt_id: createdDebt.id,
+          amount: initial_amount,
+          type,
+          note: initialEntry.note,
+          date: now,
+          ...(user?.id ? { user_id: user.id } : {})
+        };
+
+        const { data: createdEntry, error: eErr } = await supabase.from('debt_entries').insert([entryPayload]).select().single();
+        if (eErr) throw eErr;
+
+        set((state) => ({
+          debts: state.debts.map((d) => 
+            d.id === tempDebtId 
+              ? { ...createdDebt, entries: [createdEntry as DebtEntry] } 
+              : d
+          )
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to sync new debt to Supabase:", e);
+    }
+  },
+
+  addDebtEntry: async (debtId, entryData) => {
+    const tempEntryId = Math.random().toString(36).substring(7);
+    const entryDate = entryData.date || new Date().toISOString();
+    const newEntry: DebtEntry = {
+      id: tempEntryId,
+      debt_id: debtId,
+      amount: entryData.amount,
+      type: entryData.type,
+      note: entryData.note,
+      date: entryDate,
+    };
+
+    set((state) => ({
+      debts: state.debts.map((d) => 
+        d.id === debtId 
+          ? { ...d, entries: [...d.entries, newEntry], updated_at: new Date().toISOString() } 
+          : d
+      )
+    }));
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const payload = {
+        debt_id: debtId,
+        amount: entryData.amount,
+        type: entryData.type,
+        note: entryData.note,
+        date: entryDate,
+        ...(user?.id ? { user_id: user.id } : {})
+      };
+
+      const { data: createdEntry, error } = await supabase.from('debt_entries').insert([payload]).select().single();
+      if (error) throw error;
+
+      if (createdEntry) {
+        await supabase.from('debts').update({ updated_at: new Date().toISOString() }).eq('id', debtId);
+        set((state) => ({
+          debts: state.debts.map((d) => 
+            d.id === debtId 
+              ? { ...d, entries: d.entries.map((e) => e.id === tempEntryId ? createdEntry as DebtEntry : e) }
+              : d
+          )
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to sync debt entry to Supabase:", e);
+    }
+  },
+
+  deleteDebt: async (debtId) => {
+    set((state) => ({
+      debts: state.debts.filter((d) => d.id !== debtId)
+    }));
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('debts').delete().eq('id', debtId);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Failed to delete debt from Supabase:", e);
+    }
+  },
+
+  deleteDebtEntry: async (debtId, entryId) => {
+    set((state) => ({
+      debts: state.debts.map((d) => 
+        d.id === debtId 
+          ? { ...d, entries: d.entries.filter((e) => e.id !== entryId) }
+          : d
+      )
+    }));
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('debt_entries').delete().eq('id', entryId);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Failed to delete debt entry from Supabase:", e);
+    }
   }
     }),
     {
@@ -413,6 +655,7 @@ export const useAppStore = create<AppState>()(
         transactions: state.transactions,
         budgets: state.budgets,
         goals: state.goals,
+        debts: state.debts,
         userProfile: state.userProfile,
         theme: state.theme,
       }),

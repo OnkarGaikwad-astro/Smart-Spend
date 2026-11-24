@@ -1,15 +1,39 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Plus } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import Link from "next/link";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowDownLeft,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Wallet,
+  Activity,
+  Plus,
+  HandCoins,
+  CheckCircle,
+  Clock,
+  User,
+} from "lucide-react";
+import { useAppStore, getDebtTotalOwed, isDebtSettled } from "@/lib/store";
 import { motion } from "framer-motion";
 import { formatDateReadable, getIcon } from "@/lib/utils";
 import { type Transaction } from "@/lib/store";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function DashboardPage() {
-  const { transactions, isLoading, fetchData, setAddModalOpen } = useAppStore();
+  const {
+    transactions,
+    debts,
+    isLoading,
+    fetchData,
+    setAddModalOpen,
+    setAddDebtModalOpen,
+    setRepaymentModalOpen,
+    setDebtDetailsModalOpen,
+  } = useAppStore();
 
   useEffect(() => {
     fetchData();
@@ -19,6 +43,20 @@ export default function DashboardPage() {
   const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
   const totalBalance = totalIncome - totalExpense;
   const recentTxns = transactions.slice(0, 5);
+
+  // Debts aggregates
+  const totalLent = useMemo(
+    () => debts.filter((d) => d.type === "LENT").reduce((acc, d) => acc + getDebtTotalOwed(d), 0),
+    [debts]
+  );
+  const totalBorrowed = useMemo(
+    () => debts.filter((d) => d.type === "BORROWED").reduce((acc, d) => acc + getDebtTotalOwed(d), 0),
+    [debts]
+  );
+  const pendingDebts = useMemo(
+    () => debts.filter((d) => !isDebtSettled(d)).slice(0, 3),
+    [debts]
+  );
 
   const chartData = useMemo(() => {
     const dataMap = new Map();
@@ -163,11 +201,111 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Lent & Borrowed (Khata) Summary Section */}
+      <motion.div variants={itemVariants} className="bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-[20px] p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-[12px] bg-[var(--color-primary-soft)] text-[var(--color-primary-main)] flex items-center justify-center">
+              <HandCoins className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-bold text-[var(--color-text-main)]">Lent & Borrowed (Khata)</h2>
+              <p className="text-[12px] text-[var(--color-text-muted)]">Track money given to friends & amounts to repay</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAddDebtModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-primary-main)] text-white rounded-[10px] text-[12px] font-semibold shadow-sm hover:brightness-110 transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Lent/Borrowed</span>
+            </button>
+            <Link
+              href="/dashboard/debts"
+              className="px-3 py-1.5 rounded-[10px] bg-[var(--color-surface-2)] text-[var(--color-primary-main)] text-[12px] font-semibold hover:bg-[var(--color-primary-soft)] transition-colors"
+            >
+              View All ({debts.length}) →
+            </Link>
+          </div>
+        </div>
+
+        {/* 3-column stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div className="p-3.5 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+              <span>You'll Get (Lent)</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[var(--color-primary-main)]" />
+            </div>
+            <div className="text-[20px] font-bold text-[var(--color-primary-main)] mt-1">
+              ₹{totalLent.toLocaleString("en-IN")}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+              <span>You'll Give (Borrowed)</span>
+              <ArrowDownLeft className="w-3.5 h-3.5 text-[var(--color-secondary-main)]" />
+            </div>
+            <div className="text-[20px] font-bold text-[var(--color-secondary-main)] mt-1">
+              ₹{totalBorrowed.toLocaleString("en-IN")}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)]">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+              <span>Net Khata</span>
+              <span className={`text-[11px] font-bold ${totalLent - totalBorrowed >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                {totalLent - totalBorrowed >= 0 ? "Credit" : "Debit"}
+              </span>
+            </div>
+            <div className={`text-[20px] font-bold mt-1 ${totalLent - totalBorrowed >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+              {totalLent - totalBorrowed >= 0 ? "+" : "-"}₹{Math.abs(totalLent - totalBorrowed).toLocaleString("en-IN")}
+            </div>
+          </div>
+        </div>
+
+        {/* Pending items preview */}
+        {pendingDebts.length > 0 ? (
+          <div className="space-y-2">
+            <div className="text-[12px] font-semibold text-[var(--color-text-muted)]">Active Pending Records:</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {pendingDebts.map((debt) => {
+                const owed = getDebtTotalOwed(debt);
+                const isLent = debt.type === "LENT";
+                return (
+                  <div
+                    key={debt.id}
+                    onClick={() => setDebtDetailsModalOpen(true, debt)}
+                    className="p-3 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] hover:border-[var(--color-primary-main)] flex items-center justify-between cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center font-bold text-[13px] ${isLent ? "bg-[var(--color-primary-soft)] text-[var(--color-primary-main)]" : "bg-[var(--color-secondary-soft)] text-[var(--color-secondary-main)]"}`}>
+                        {debt.person_name ? debt.person_name[0].toUpperCase() : "?"}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold text-[var(--color-text-main)] truncate max-w-[110px]">{debt.person_name}</div>
+                        <div className="text-[10px] text-[var(--color-text-muted)]">{isLent ? "You'll Get" : "You'll Give"}</div>
+                      </div>
+                    </div>
+                    <div className={`text-[13px] font-bold ${isLent ? "text-[var(--color-primary-main)]" : "text-[var(--color-secondary-main)]"}`}>
+                      ₹{owed.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <p className="text-[12px] text-[var(--color-text-muted)] text-center py-2">
+            No pending loans or borrows. Everything is settled! 🎉
+          </p>
+        )}
+      </motion.div>
     </motion.div>
   );
 }
-
-import Link from "next/link";
 
 function OverviewCard({ title, amount, trend, icon, accentBg, positive = true }: { title: string, amount: string, trend: string, icon: React.ReactNode, accentBg: string, positive?: boolean }) {
   return (
