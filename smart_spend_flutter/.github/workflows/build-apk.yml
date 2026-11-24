@@ -53,7 +53,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK (Release)
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        run: flutter build apk --release --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" --android-skip-build-dependency-validation
 
       - name: Extract Version from pubspec.yaml
         id: app_version

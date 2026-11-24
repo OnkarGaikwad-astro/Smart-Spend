@@ -37,3 +37,9 @@
 -dontwarn com.google.android.play.core.splitinstall.**
 -dontwarn com.google.android.play.core.tasks.**
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**
+
+# Google Sign In & Play Services Auth
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+-dontwarn com.google.android.gms.**
+-keep class com.google.android.gms.tasks.** { *; }

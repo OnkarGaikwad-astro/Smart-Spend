@@ -54,3 +54,4 @@ key.properties
 local.properties
 secrets.json
 *.env*
+!android/app/debug.keystore
