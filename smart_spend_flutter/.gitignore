@@ -49,6 +49,7 @@ app.*.map.json
 *.keystore
 *.p12
 *.key
+*.pem
 key.properties
 local.properties
 secrets.json

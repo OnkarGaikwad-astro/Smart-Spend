@@ -1785,7 +1785,7 @@ class SettingsScreen extends StatelessWidget {
                   colors: colors,
                   icon: Icons.code_rounded,
                   label: 'GitHub',
-                  url: 'https://github.com/astronkar',
+                  url: 'https://github.com/OnkarGaikwad-astro',
                 ),
               ),
               const SizedBox(width: 8),
