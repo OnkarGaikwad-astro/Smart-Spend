@@ -58,3 +58,6 @@ screen*.png
 current_phone_screen.png
 profile_opened.png
 quick_add_overlay.png
+
+# Flutter project (moved to dedicated repository)
+smart_spend_flutter/
