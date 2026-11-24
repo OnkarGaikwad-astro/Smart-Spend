@@ -1,5 +1,21 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, Brain, PiggyBank, ShieldCheck, Sparkles } from "lucide-react";
+import { 
+  ArrowRight, 
+  BarChart3, 
+  Brain, 
+  Download, 
+  ExternalLink, 
+  Mic, 
+  PiggyBank, 
+  ShieldCheck, 
+  Smartphone, 
+  Sparkles, 
+  Zap 
+} from "lucide-react";
+
+const APK_DOWNLOAD_URL = "https://github.com/OnkarGaikwad-astro/SmartSpend-flutter/releases/latest/download/SmartSpend.apk";
+const FLUTTER_REPO_URL = "https://github.com/OnkarGaikwad-astro/SmartSpend-flutter";
+const FLUTTER_RELEASES_URL = "https://github.com/OnkarGaikwad-astro/SmartSpend-flutter/releases";
 
 export default function Home() {
   return (
@@ -23,11 +39,12 @@ export default function Home() {
       />
 
       {/* Hero Section */}
-      <div className="max-w-5xl w-full text-center space-y-8 z-10 mt-12 md:mt-24 flex flex-col items-center">
-        <h1 className="inline-flex items-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface)] shadow-sm px-4 py-1.5 text-[13px] font-medium text-[var(--color-text-main)] transition-all hover:shadow-md">
-          <Sparkles className="w-4 h-4 text-[var(--color-primary-main)] mr-2" />
-          SmartSpend AI — The Future of Personal Finance
-        </h1>
+      <div className="max-w-5xl w-full text-center space-y-8 z-10 mt-12 md:mt-20 flex flex-col items-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface)] shadow-sm px-4 py-1.5 text-[13px] font-medium text-[var(--color-text-main)] transition-all hover:shadow-md">
+          <Sparkles className="w-4 h-4 text-[var(--color-primary-main)]" />
+          <span>SmartSpend AI — The Future of Personal Finance</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
         
         <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[var(--color-text-main)] leading-[1.1]">
           Master your money, <br className="hidden md:block" />
@@ -40,19 +57,90 @@ export default function Home() {
           The most beautiful, intelligent personal finance tracker designed for everyone. Track expenses, crush budgets, manage debts, and let AI analyze your spending habits.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+        {/* Call to Actions (Web + Android APK) */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 w-full sm:w-auto">
           <Link 
             href="/dashboard"
-            className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-[16px] bg-[var(--color-primary-main)] px-8 font-medium text-white transition-all hover:bg-blue-600 hover:scale-105 shadow-xl shadow-[var(--color-primary-soft)]"
+            className="w-full sm:w-auto group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-[16px] bg-[var(--color-primary-main)] px-8 font-medium text-white transition-all hover:bg-blue-600 hover:scale-105 shadow-xl shadow-[var(--color-primary-soft)]"
           >
-            <span className="text-[16px]">Get Started Now</span>
+            <span className="text-[16px]">Launch Web App</span>
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
+
+          <a 
+            href={APK_DOWNLOAD_URL}
+            className="w-full sm:w-auto group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-[16px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] px-7 font-medium text-[var(--color-text-main)] transition-all hover:bg-[var(--color-surface-2)] hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center mr-3 text-emerald-600 group-hover:scale-110 transition-transform">
+              <Smartphone className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold -mb-0.5">Android APK</span>
+              <span className="text-[15px] font-bold flex items-center gap-1.5">
+                Download App <Download className="w-4 h-4 text-emerald-500 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      {/* Android App Showcase Card */}
+      <div className="mt-20 max-w-4xl w-full z-10">
+        <div className="relative rounded-[28px] bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-surface-2)] border border-[var(--color-border-subtle)] p-8 md:p-10 shadow-2xl backdrop-blur-xl overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-emerald-500/10 to-[var(--color-primary-soft)] rounded-full blur-3xl pointer-events-none"></div>
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+            <div className="space-y-4 max-w-xl text-center md:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[12px] font-semibold">
+                <Smartphone className="w-3.5 h-3.5" /> Flutter Companion App • v1.0.0
+              </div>
+              <h3 className="text-2xl md:text-3xl font-bold text-[var(--color-text-main)] tracking-tight">
+                Get SmartSpend on Your Android Phone
+              </h3>
+              <p className="text-[15px] text-[var(--color-text-muted)] leading-relaxed">
+                Log expenses in seconds with interactive Android Home Screen Widgets, record voice transactions with AI, manage lending & borrowing with Debt Trackers, and keep everything in sync offline or online with Supabase.
+              </p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-[13px] font-medium text-[var(--color-text-main)]">
+                <div className="flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Home Widgets</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Mic className="w-4 h-4 text-purple-500 shrink-0" />
+                  <span>Voice AI</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>Biometric Lock</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row md:flex-col gap-3 w-full md:w-auto shrink-0">
+              <a
+                href={APK_DOWNLOAD_URL}
+                className="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[15px] shadow-lg shadow-emerald-500/25 transition-all hover:scale-105"
+              >
+                <Download className="w-5 h-5" />
+                <span>Download SmartSpend.apk</span>
+              </a>
+              <a
+                href={FLUTTER_RELEASES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-[14px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-2)] text-[13px] font-medium transition-colors"
+              >
+                <span>All Releases on GitHub</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Features Grid */}
-      <div className="mt-32 md:mt-48 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full z-10 pb-24">
+      <div className="mt-24 md:mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full z-10 pb-24">
         <FeatureCard 
           icon={<Brain className="h-6 w-6 text-[var(--color-purple-main)]" />}
           iconBg="bg-[var(--color-purple-soft)]"
@@ -85,11 +173,19 @@ export default function Home() {
           Designed and built with ❤️ by <span className="text-[var(--color-text-main)] font-bold">Onkar Gaikwad</span>.
         </p>
         <p className="text-[13px] text-[var(--color-text-muted)] mt-2 max-w-lg">
-          A personal finance tracker built to help you manage your money, savings, and debts effectively using the power of AI.
+          A personal finance tracker built to help you manage your money, savings, and debts effectively using the power of AI across Web & Android.
         </p>
-        <div className="flex gap-4 mt-4 text-[13px] font-medium">
+        <div className="flex flex-wrap justify-center gap-4 mt-4 text-[13px] font-medium">
           <a href="https://github.com/OnkarGaikwad-astro" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-muted)] hover:text-[var(--color-primary-main)] transition-colors">
             GitHub Profile
+          </a>
+          <span className="text-[var(--color-border-subtle)]">•</span>
+          <a href={FLUTTER_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-muted)] hover:text-[var(--color-primary-main)] transition-colors">
+            Flutter App Repository
+          </a>
+          <span className="text-[var(--color-border-subtle)]">•</span>
+          <a href={APK_DOWNLOAD_URL} className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors flex items-center gap-1">
+            <Download className="w-3.5 h-3.5" /> Download APK (v1.0.0)
           </a>
         </div>
       </footer>
