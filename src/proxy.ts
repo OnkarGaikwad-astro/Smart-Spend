@@ -1,16 +1,19 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // Mock env vars if missing to prevent crashing
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fake-project.supabase.co'
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'fake-anon-key'
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return response
+  }
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -58,18 +61,19 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Use getUser() to securely validate the JWT on the server
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Protect /dashboard routes
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
-  // Redirect /login to /dashboard if already logged in
+  // Redirect /login or / to /dashboard if already logged in
   if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/') {
-    if (session) {
+    if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
@@ -84,8 +88,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - api/chat (we handle auth internally in the api route or not)
+     * - static images, icons, and fonts
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff|woff2)$).*)',
   ],
 }

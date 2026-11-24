@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+import { verifyAuth } from '@/lib/auth-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { image } = body;
+    // 1. Verify User Authentication
+    const auth = await verifyAuth(req);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to extract receipts.' },
+        { status: 401 }
+      );
+    }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
         { error: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.' },
         { status: 500 }
       );
     }
+
+    const body = await req.json();
+    const { image } = body;
 
     if (!image) {
       return NextResponse.json({ error: 'Image is required' }, { status: 400 });
@@ -47,6 +56,7 @@ Return ONLY the raw JSON array of objects, without any markdown formatting or ba
 ]
 `;
 
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [

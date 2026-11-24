@@ -6,6 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        disallow: ["/dashboard/", "/api/"],
       },
     ],
     sitemap: "https://smartspend.astronkar.in/sitemap.xml",

@@ -4,4 +4,8 @@
     <string name="widget_quick_transaction_desc">Track balance and quickly add expenses or income directly from home screen.</string>
     <string name="widget_debts_title">SmartSpend: Lent &amp; Borrowed</string>
     <string name="widget_debts_desc">See pending lent and borrowed money and quickly log new debts.</string>
+    <string name="shortcut_voice_short">Voice Add</string>
+    <string name="shortcut_voice_long">Speak to Add Transaction</string>
+    <string name="voice_assistant_widget_title">SmartSpend: Aurex Voice AI</string>
+    <string name="voice_assistant_widget_description">1-Tap Voice AI widget to add transactions by speaking directly from home screen without opening the app.</string>
 </resources>

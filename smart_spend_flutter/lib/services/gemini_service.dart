@@ -30,9 +30,14 @@ class GeminiService {
     required Map<String, dynamic> context,
     String? transactionsCsv,
   }) async {
-    final apiKey = AppConstants.geminiApiKey;
+    final customKey = StorageService().getCustomGeminiApiKey();
+    final apiKey = AppConstants.geminiApiKey.isNotEmpty
+        ? AppConstants.geminiApiKey
+        : (customKey ?? '');
     if (apiKey.isEmpty) {
-      return AurexChatResult(text: 'Error: Gemini API key is missing.');
+      return AurexChatResult(
+        text: 'Error: Gemini API key is missing. Please configure your key in Settings or build with --dart-define=GEMINI_API_KEY=your_key.',
+      );
     }
 
     final now = DateTime.now();
@@ -78,10 +83,18 @@ ATTACHED TRANSACTIONS CSV FILE (transactions.csv):
 $csvContent
 ```
 
-CAPABILITY 1 - ADDING TRANSACTIONS & INCOME:
-You can directly add transactions or income to the user's account!
-When the user asks you to add, log, spend, earn, or record an expense or income (e.g. "add 200 for lunch", "spent 150 on petrol", "add 5000 income from salary", "I earned 1200 freelancing today", "bought groceries for 450 add it"):
-1. In your message, warmly confirm what you have recorded (e.g. "✅ Added expense of ₹200 for Lunch under Food!").
+CAPABILITY 1 - ADDING TRANSACTIONS & INCOME (TEXT & VOICE):
+You can directly add transactions or income to the user's account from written text or SPOKEN voice commands!
+The user may speak naturally, colloquially, or in short phrases (including Indian English and Hinglish vernacular), such as:
+- "Spent 250 on pizza" / "Paid 80 for auto" / "Bought shoes for 1200" -> EXPENSE
+- "Chai 20" / "Tea 15 rupees" / "Petrol 500" / "Electricity bill 1200" -> EXPENSE
+- "Salary received 45000" / "Received 5000 freelance payment" / "Got 2000 cash gift" -> INCOME
+- "Auto 60" / "Uber 350" / "Zomato 420" / "Swiggy 280" / "Groceries 850" -> EXPENSE
+- Hinglish/Indian spoken phrases: "Chai 20 rupay", "Dost ko treat di 500", "Petrol 500 ka dalwaya", "Sabzi 150" -> EXPENSE
+- Ambiguous voice inputs like "Spent 400" -> EXPENSE, Category: Other, Amount: 400
+
+When the user asks you to add, log, spend, earn, or record an expense or income:
+1. In your message, warmly confirm what you have recorded (e.g. "✅ Added expense of ₹250 for Pizza under Food!").
 2. At the very end of your response, output a TRANSACTION_ACTION block formatted EXACTLY as:
 <<<TRANSACTION_ACTION
 {
@@ -94,13 +107,13 @@ When the user asks you to add, log, spend, earn, or record an expense or income 
 TRANSACTION_ACTION>>>
 If multiple transactions are requested in one prompt, you may output a JSON array of objects inside the block.
 
-CAPABILITY 2 - LENT & BORROWED MONEY (KHATA):
-You can directly record money lent to friends or borrowed from others!
+CAPABILITY 2 - LENT & BORROWED MONEY (KHATA & VOICE KHATA):
+You can directly record money lent to friends or borrowed from others, including spoken voice commands!
 When the user mentions lending, borrowing, adding more, or repaying:
-- "Lent 500 to Rahul for lunch" / "Rahul borrowed 500 from me" -> action: "LEND"
-- "I borrowed 1000 from Rohit for concert" / "Rohit gave me 1000 loan" -> action: "BORROW"
-- "Rahul borrowed 200 more for auto" / "Borrowed 500 more from Rohit" -> action: "ADD_MORE"
-- "Rahul paid me 300" / "I paid 500 back to Rohit" / "Rahul settled" -> action: "REPAY"
+- "Lent 500 to Rahul for lunch" / "Rahul borrowed 500 from me" / "Rahul ko 500 diye" -> action: "LEND"
+- "I borrowed 1000 from Rohit for concert" / "Rohit gave me 1000 loan" / "Rohit se 1000 liye" -> action: "BORROW"
+- "Rahul borrowed 200 more for auto" / "Gave 200 more to Rahul" -> action: "ADD_MORE"
+- "Rahul paid me 300" / "I paid 500 back to Rohit" / "Rahul settled" / "Rahul ne 300 wapas diye" -> action: "REPAY"
 
 1. In your message, warmly confirm what was recorded (e.g. "✅ Recorded: Lent ₹500 to Rahul for Lunch!").
 2. At the very end of your response, output a DEBT_ACTION block formatted EXACTLY as:
@@ -247,9 +260,12 @@ $text''';
     required Uint8List imageBytes,
     required String mimeType,
   }) async {
-    final apiKey = AppConstants.geminiApiKey;
+    final customKey = StorageService().getCustomGeminiApiKey();
+    final apiKey = AppConstants.geminiApiKey.isNotEmpty
+        ? AppConstants.geminiApiKey
+        : (customKey ?? '');
     if (apiKey.isEmpty) {
-      throw Exception('Gemini API key is not configured.');
+      throw Exception('Gemini API key is not configured. Please add your key in Settings or build with --dart-define=GEMINI_API_KEY=your_key.');
     }
 
     final base64Image = base64Encode(imageBytes);

@@ -7,9 +7,11 @@ import '../models/budget_model.dart';
 import '../models/goal_model.dart';
 import '../models/debt_model.dart';
 import '../models/user_profile_model.dart';
+import '../core/utils.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 import '../services/widget_sync_service.dart';
+import '../services/notification_service.dart';
 
 class AppProvider extends ChangeNotifier {
   final StorageService _storage = StorageService();
@@ -24,6 +26,24 @@ class AppProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isDarkMode = true;
 
+  String _themeModeString = 'system';
+  String _colorPalette = 'ocean';
+  String _currencySymbol = '₹';
+  bool _hideBalances = false;
+  bool _hapticsEnabled = true;
+  bool _dailyReminderEnabled = true;
+  bool _budgetAlertsEnabled = true;
+  bool _debtRemindersEnabled = true;
+
+  // Extended settings
+  String _defaultPaymentMode = 'UPI';
+  String _defaultCategory = 'Food & Dining';
+  bool _smartAutoCategorize = true;
+  bool _showDecimals = false;
+  bool _weekStartMonday = true;
+  bool _autoSpeakAiReplies = true;
+  bool _soundEffectsEnabled = true;
+
   List<TransactionModel> get transactions => _transactions;
   List<BudgetModel> get budgets => _budgets;
   List<GoalModel> get goals => _goals;
@@ -31,12 +51,62 @@ class AppProvider extends ChangeNotifier {
   UserProfileModel? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
   bool get isDarkMode => _isDarkMode;
+  String get themeModeString => _themeModeString;
+  String get colorPalette => _colorPalette;
+  String get currencySymbol => _currencySymbol;
+  bool get hideBalances => false; // Privacy mode removed
+  bool get hapticsEnabled => _hapticsEnabled;
+  bool get dailyReminderEnabled => _dailyReminderEnabled;
+  bool get budgetAlertsEnabled => _budgetAlertsEnabled;
+  bool get debtRemindersEnabled => _debtRemindersEnabled;
+
+  String get defaultPaymentMode => _defaultPaymentMode;
+  String get defaultCategory => _defaultCategory;
+  bool get smartAutoCategorize => _smartAutoCategorize;
+  bool get showDecimals => _showDecimals;
+  bool get weekStartMonday => _weekStartMonday;
+  bool get autoSpeakAiReplies => _autoSpeakAiReplies;
+  bool get soundEffectsEnabled => _soundEffectsEnabled;
+
+  ThemeMode get themeMode {
+    switch (_themeModeString) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
+  }
+
   bool get isOnline => _syncService.isOnline;
   bool get isSyncing => _syncService.isSyncing;
   int get pendingSyncCount => _storage.pendingSyncCount;
 
   AppProvider() {
+    _themeModeString = _storage.getThemeModeString();
+    _colorPalette = _storage.getColorPalette();
     _isDarkMode = _storage.isDarkMode();
+    _currencySymbol = _storage.getCurrencySymbol();
+    _hideBalances = false; // Privacy mode removed
+    _hapticsEnabled = _storage.isHapticsEnabled();
+    _dailyReminderEnabled = _storage.isDailyReminderEnabled();
+    _budgetAlertsEnabled = _storage.isBudgetAlertsEnabled();
+    _debtRemindersEnabled = _storage.isDebtRemindersEnabled();
+
+    _defaultPaymentMode = _storage.getDefaultPaymentMode();
+    _defaultCategory = _storage.getDefaultCategory();
+    _smartAutoCategorize = _storage.isAutoCategorizeEnabled();
+    _showDecimals = _storage.isShowDecimalsEnabled();
+    _weekStartMonday = _storage.isWeekStartMonday();
+    _autoSpeakAiReplies = _storage.isAutoSpeakAiEnabled();
+    _soundEffectsEnabled = _storage.isSoundEffectsEnabled();
+
+    // Sync global AppUtils flags
+    AppUtils.currentCurrencySymbol = _currencySymbol;
+    AppUtils.hideBalances = false;
+
     _loadFromLocal();
 
     // Listen to sync notifications
@@ -138,6 +208,11 @@ class AppProvider extends ChangeNotifier {
       recordId: txn.id,
       data: txn.toRemoteMap(currentUserId: _currentUserId),
     );
+
+    // 3. Trigger budget alerts if limit approached or exceeded
+    if (_budgetAlertsEnabled && txn.isExpense) {
+      _checkBudgetAlert(txn.category);
+    }
   }
 
   Future<void> updateTransaction(String id, {
@@ -598,10 +673,156 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
-  // --- Theme ---
+  // --- Theme & Appearance ---
   void toggleTheme() {
-    _isDarkMode = !_isDarkMode;
-    _storage.setDarkMode(_isDarkMode);
+    final next = _isDarkMode ? 'light' : 'dark';
+    setThemeModeString(next);
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    _themeModeString = mode == ThemeMode.system
+        ? 'system'
+        : (mode == ThemeMode.dark ? 'dark' : 'light');
+    _isDarkMode = mode == ThemeMode.dark;
+    _storage.setThemeModeString(_themeModeString);
+    notifyListeners();
+  }
+
+  void setThemeModeString(String modeStr) {
+    _themeModeString = modeStr;
+    _isDarkMode = modeStr == 'dark';
+    _storage.setThemeModeString(modeStr);
+    notifyListeners();
+  }
+
+  // --- Currency & Formatting ---
+  void setCurrencySymbol(String symbol) {
+    _currencySymbol = symbol;
+    _storage.setCurrencySymbol(symbol);
+    AppUtils.currentCurrencySymbol = symbol;
+    notifyListeners();
+  }
+
+  // --- Privacy (Hide Balances) ---
+  void toggleHideBalances() {
+    _hideBalances = !_hideBalances;
+    _storage.setHideBalances(_hideBalances);
+    AppUtils.hideBalances = _hideBalances;
+    notifyListeners();
+  }
+
+  void setColorPalette(String palette) {
+    _colorPalette = palette;
+    _storage.setColorPalette(palette);
+    notifyListeners();
+  }
+
+  void setDefaultPaymentMode(String mode) {
+    _defaultPaymentMode = mode;
+    _storage.setDefaultPaymentMode(mode);
+    notifyListeners();
+  }
+
+  void setDefaultCategory(String cat) {
+    _defaultCategory = cat;
+    _storage.setDefaultCategory(cat);
+    notifyListeners();
+  }
+
+  void setSmartAutoCategorize(bool enabled) {
+    _smartAutoCategorize = enabled;
+    _storage.setAutoCategorizeEnabled(enabled);
+    notifyListeners();
+  }
+
+  void setShowDecimals(bool enabled) {
+    _showDecimals = enabled;
+    _storage.setShowDecimalsEnabled(enabled);
+    notifyListeners();
+  }
+
+  void setWeekStartMonday(bool monday) {
+    _weekStartMonday = monday;
+    _storage.setWeekStartMonday(monday);
+    notifyListeners();
+  }
+
+  void setAutoSpeakAiReplies(bool enabled) {
+    _autoSpeakAiReplies = enabled;
+    _storage.setAutoSpeakAiEnabled(enabled);
+    notifyListeners();
+  }
+
+  void setSoundEffectsEnabled(bool enabled) {
+    _soundEffectsEnabled = enabled;
+    _storage.setSoundEffectsEnabled(enabled);
+    notifyListeners();
+  }
+
+  void _checkBudgetAlert(String category) {
+    try {
+      final budgets = computedBudgets;
+      BudgetModel? match;
+      for (final b in budgets) {
+        if (b.category.toLowerCase() == category.toLowerCase()) {
+          match = b;
+          break;
+        }
+      }
+      if (match != null && match.allocated > 0) {
+        final pct = (match.spent / match.allocated) * 100;
+        if (pct >= 80) {
+          NotificationService().showBudgetAlert(
+            category: match.category,
+            percent: pct,
+            currentSpent: match.spent,
+            budgetLimit: match.allocated,
+            currencySymbol: _currencySymbol,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[AppProvider] Budget alert error: $e');
+    }
+  }
+
+  // --- Haptics & Notifications ---
+  void setHapticsEnabled(bool enabled) {
+    _hapticsEnabled = enabled;
+    _storage.setHapticsEnabled(enabled);
+    notifyListeners();
+  }
+
+  void setDailyReminderEnabled(bool enabled) {
+    _dailyReminderEnabled = enabled;
+    _storage.setDailyReminderEnabled(enabled);
+    if (enabled) {
+      NotificationService().scheduleDailyReminder();
+    } else {
+      NotificationService().cancelDailyReminder();
+    }
+    notifyListeners();
+  }
+
+  void setBudgetAlertsEnabled(bool enabled) {
+    _budgetAlertsEnabled = enabled;
+    _storage.setBudgetAlertsEnabled(enabled);
+    notifyListeners();
+  }
+
+  void setDebtRemindersEnabled(bool enabled) {
+    _debtRemindersEnabled = enabled;
+    _storage.setDebtRemindersEnabled(enabled);
+    notifyListeners();
+  }
+
+  // --- Clear Local Cache ---
+  Future<void> clearAllData() async {
+    await _storage.clearAll();
+    _transactions.clear();
+    _budgets.clear();
+    _goals.clear();
+    _debts.clear();
     notifyListeners();
   }
 

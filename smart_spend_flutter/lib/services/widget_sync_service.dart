@@ -5,6 +5,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/app_provider.dart';
+import '../theme/app_theme.dart';
 
 class WidgetSyncService {
   static final WidgetSyncService _instance = WidgetSyncService._internal();
@@ -126,7 +127,21 @@ class WidgetSyncService {
         '$activeDebts active',
       );
 
-      // Request Android to update both widgets
+      // 3. Save theme colors for widgets to match app
+      final isDark = provider.isDarkMode;
+      final themeColors = isDark
+          ? AppTheme.getDarkColors(provider.colorPalette)
+          : AppTheme.getLightColors(provider.colorPalette);
+      await HomeWidget.saveWidgetData<String>(
+        'widget_theme_primary',
+        '#${(themeColors.primary.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'widget_theme_bg',
+        '#${(themeColors.surface.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
+      );
+
+      // Request Android to update all widgets
       await HomeWidget.updateWidget(
         name: 'QuickTransactionWidgetProvider',
         androidName: 'QuickTransactionWidgetProvider',
@@ -134,6 +149,10 @@ class WidgetSyncService {
       await HomeWidget.updateWidget(
         name: 'DebtsWidgetProvider',
         androidName: 'DebtsWidgetProvider',
+      );
+      await HomeWidget.updateWidget(
+        name: 'VoiceAssistantWidgetProvider',
+        androidName: 'VoiceAssistantWidgetProvider',
       );
 
       debugPrint('[WidgetSync] Native widgets successfully updated.');

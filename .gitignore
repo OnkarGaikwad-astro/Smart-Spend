@@ -39,3 +39,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Security, Keystores & Credentials
+*.jks
+*.keystore
+*.p12
+*.key
+**/key.properties
+**/local.properties
+**/secrets.json
+!**/secrets.example.json
+
+# Local capture media & test files
+sc_*.png
+test_*.mp3
+snap_*.png
+screen*.png
+current_phone_screen.png
+profile_opened.png
+quick_add_overlay.png

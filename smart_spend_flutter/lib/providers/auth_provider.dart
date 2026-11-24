@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 import '../models/user_profile_model.dart';
+import '../services/avatar_cache_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 
@@ -64,6 +66,9 @@ class AuthProvider extends ChangeNotifier {
         );
         _userProfile = profile;
         _storage.saveUserProfile(profile);
+        if (profile.avatarUrl != null) {
+          unawaited(AvatarCacheService.instance.preCacheAvatar(profile.avatarUrl));
+        }
 
         // Trigger sync
         _syncService.syncAll();
@@ -97,6 +102,9 @@ class AuthProvider extends ChangeNotifier {
         );
         _userProfile = profile;
         await _storage.saveUserProfile(profile);
+        if (profile.avatarUrl != null) {
+          unawaited(AvatarCacheService.instance.preCacheAvatar(profile.avatarUrl));
+        }
         await _syncService.syncAll();
       }
 
@@ -141,6 +149,9 @@ class AuthProvider extends ChangeNotifier {
         );
         _userProfile = profile;
         await _storage.saveUserProfile(profile);
+        if (profile.avatarUrl != null) {
+          unawaited(AvatarCacheService.instance.preCacheAvatar(profile.avatarUrl));
+        }
         await _syncService.syncAll();
       }
 
@@ -222,6 +233,9 @@ class AuthProvider extends ChangeNotifier {
         );
         _userProfile = profile;
         await _storage.saveUserProfile(profile);
+        if (profile.avatarUrl != null) {
+          unawaited(AvatarCacheService.instance.preCacheAvatar(profile.avatarUrl));
+        }
         await _syncService.syncAll();
       }
 

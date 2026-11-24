@@ -11,9 +11,13 @@ import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_shell.dart';
 import 'screens/quick_add/quick_add_screen.dart';
 import 'screens/quick_add/quick_add_debt_screen.dart';
+import 'screens/quick_add/quick_voice_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
 import 'services/widget_sync_service.dart';
+import 'services/avatar_cache_service.dart';
+import 'services/notification_service.dart';
+import 'services/tts_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -29,9 +33,12 @@ void main() async {
     _initSupabase(),
   ]);
 
-  // Non-blocking background sync and widget service init
+  // Non-blocking background sync, widget service, notifications, and avatar cache init
   unawaited(SyncService().init());
+  unawaited(AvatarCacheService.instance.init());
   WidgetSyncService().init();
+  unawaited(NotificationService().init());
+  unawaited(TtsService().init());
 
   runApp(const SmartSpendApp());
 }
@@ -65,10 +72,9 @@ class SmartSpendApp extends StatelessWidget {
           return MaterialApp(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode:
-                appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            theme: AppTheme.getTheme(Brightness.light, appProvider.colorPalette),
+            darkTheme: AppTheme.getTheme(Brightness.dark, appProvider.colorPalette),
+            themeMode: appProvider.themeMode,
             home: const RootGatekeeper(),
             onGenerateRoute: (settings) {
               final uri = Uri.parse(settings.name ?? '/');
@@ -89,6 +95,14 @@ class SmartSpendApp extends StatelessWidget {
                   barrierColor: Colors.black45,
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       QuickAddDebtScreen(initialType: type),
+                );
+              }
+              if (path == '/quick-voice' || path.contains('quick-voice') || path.contains('voice-assistant')) {
+                return PageRouteBuilder(
+                  opaque: false,
+                  barrierColor: Colors.black54,
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const QuickVoiceScreen(),
                 );
               }
               return MaterialPageRoute(

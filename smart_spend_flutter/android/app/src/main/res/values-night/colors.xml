@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="launch_background_color">#101318</color>
-    <color name="widget_bg">#FFFFFF</color>
-    <color name="widget_card_bg">#F8FAFC</color>
-    <color name="widget_border">#E2E8F0</color>
-    <color name="widget_primary">#2563EB</color>
-    <color name="widget_primary_soft">#EFF6FF</color>
-    <color name="widget_income">#16A34A</color>
-    <color name="widget_income_bg">#F0FDF4</color>
-    <color name="widget_expense">#DC2626</color>
-    <color name="widget_expense_bg">#FEF2F2</color>
-    <color name="widget_text_primary">#0F172A</color>
-    <color name="widget_text_secondary">#475569</color>
+    <color name="widget_bg">#111A22</color>
+    <color name="widget_card_bg">#18232D</color>
+    <color name="widget_border">#2A3A4A</color>
+    <color name="widget_primary">#447A9C</color>
+    <color name="widget_primary_soft">#1E2F3F</color>
+    <color name="widget_income">#10B981</color>
+    <color name="widget_income_bg">#132E27</color>
+    <color name="widget_income_border">#059669</color>
+    <color name="widget_expense">#EF4444</color>
+    <color name="widget_expense_bg">#381E24</color>
+    <color name="widget_expense_border">#DC2626</color>
+    <color name="widget_text_primary">#F1F5F9</color>
+    <color name="widget_text_secondary">#94A3B8</color>
     <color name="widget_text_muted">#64748B</color>
 </resources>

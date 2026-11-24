@@ -1,27 +1,39 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../models/transaction_model.dart';
 import '../providers/app_provider.dart';
 import '../services/gemini_service.dart';
+import '../services/tts_service.dart';
 import '../theme/app_theme.dart';
 import 'brain_icon.dart';
 
 class AIAssistantSheet extends StatefulWidget {
   final String? initialPrompt;
+  final bool autoListen;
 
-  const AIAssistantSheet({super.key, this.initialPrompt});
+  const AIAssistantSheet({
+    super.key,
+    this.initialPrompt,
+    this.autoListen = false,
+  });
 
   @override
   State<AIAssistantSheet> createState() => _AIAssistantSheetState();
 }
 
-class _AIAssistantSheetState extends State<AIAssistantSheet> {
+class _AIAssistantSheetState extends State<AIAssistantSheet>
+    with TickerProviderStateMixin {
   final List<Map<String, dynamic>> _messages = [
     {
       'role': 'ai',
       'content':
-          'Hi there! I am Aurex, your AI financial assistant. How can I help you manage your money today?',
+          'Hi there! I am Aurex, your AI financial assistant. Speak or type to add transactions, record debts, or ask anything about your money!',
     }
   ];
 
@@ -29,29 +41,295 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
 
+  // Speech-to-text integration with sound-level reactivity
+  final SpeechToText _speech = SpeechToText();
+  bool _speechInitialized = false;
+  bool _isListening = false;
+  String _spokenWords = '';
+  double _soundLevel = 0.0;
+  String? _selectedLocaleId;
+  Timer? _finalResultDebounceTimer;
+  late AnimationController _pulseController;
+  late AnimationController _waveController;
+
   final List<String> _quickPrompts = [
-    'Who owes me money?',
+    '🎙️ Speak to Add Expense',
+    'Spent ₹250 on Lunch',
     'Lent ₹500 to Rahul for lunch',
+    'Received ₹15000 salary',
     'I borrowed ₹1000 from Rohit',
+    'Who owes me money?',
     'How much did I spend this month?',
-    'Add expense: ₹250 for Lunch',
   ];
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _initSpeech();
     if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _sendMessage(widget.initialPrompt!);
+      });
+    } else if (widget.autoListen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted && !_isListening) {
+            _startListening();
+          }
+        });
       });
     }
   }
 
   @override
   void dispose() {
+    _finalResultDebounceTimer?.cancel();
+    TtsService().stop();
+    _speech.stop();
+    _pulseController.dispose();
+    _waveController.dispose();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _detectPreferredLocale() async {
+    try {
+      final locales = await _speech.locales();
+      for (final loc in locales) {
+        final id = loc.localeId.toLowerCase().replaceAll('_', '-');
+        if (id == 'en-in') {
+          _selectedLocaleId = loc.localeId;
+          return;
+        }
+      }
+      final sys = await _speech.systemLocale();
+      if (sys != null && sys.localeId.toLowerCase().startsWith('en')) {
+        _selectedLocaleId = sys.localeId;
+        return;
+      }
+      for (final loc in locales) {
+        if (loc.localeId.toLowerCase().startsWith('en')) {
+          _selectedLocaleId = loc.localeId;
+          return;
+        }
+      }
+      _selectedLocaleId = 'en_IN';
+    } catch (e) {
+      debugPrint('[SpeechToText] Detect locale error: $e');
+      _selectedLocaleId = 'en_IN';
+    }
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechInitialized = await _speech.initialize(
+        onStatus: _onSpeechStatus,
+        onError: _onSpeechError,
+      );
+      if (_speechInitialized) {
+        await _detectPreferredLocale();
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('[SpeechToText] Init exception: $e');
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _stopListening(autoSubmit: true);
+    } else {
+      await _startListening();
+    }
+  }
+
+  Future<void> _startListening() async {
+    HapticFeedback.mediumImpact();
+
+    // 1. Explicitly request runtime microphone permission
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Microphone permission is required to speak transactions. Tap Settings to allow.',
+            ),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: () => openAppSettings(),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!_speechInitialized) {
+      try {
+        _speechInitialized = await _speech.initialize(
+          onStatus: _onSpeechStatus,
+          onError: _onSpeechError,
+        );
+      } catch (e) {
+        debugPrint('[SpeechToText] Re-init failed: $e');
+      }
+    }
+
+    if (!_speechInitialized) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Microphone permission is required to speak transactions. Please enable it in Settings.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    _spokenWords = '';
+    _soundLevel = 0.0;
+    setState(() {
+      _isListening = true;
+    });
+    _pulseController.repeat(reverse: true);
+    _waveController.repeat();
+
+    try {
+      await _speech.listen(
+        onResult: _onSpeechResult,
+        onSoundLevelChange: _onSoundLevelChange,
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.deviceDefault,
+          cancelOnError: false,
+          partialResults: true,
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 3),
+          autoPunctuation: true,
+          enableHapticFeedback: true,
+          localeId: _selectedLocaleId,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SpeechToText] Listen error: $e');
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+          _soundLevel = 0.0;
+        });
+        _pulseController.stop();
+        _waveController.stop();
+      }
+    }
+  }
+
+  Future<void> _stopListening({bool autoSubmit = true}) async {
+    _finalResultDebounceTimer?.cancel();
+    _finalResultDebounceTimer = null;
+
+    try {
+      await _speech.stop();
+    } catch (e) {
+      debugPrint('[SpeechToText] Stop error: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isListening = false;
+        _soundLevel = 0.0;
+      });
+      _pulseController.stop();
+      _pulseController.reset();
+      _waveController.stop();
+      _waveController.reset();
+    }
+
+    final textToSend = _textController.text.trim();
+    if (autoSubmit && textToSend.isNotEmpty) {
+      HapticFeedback.lightImpact();
+      _sendMessage(textToSend);
+    }
+  }
+
+  void _onSoundLevelChange(double level) {
+    if (!mounted || !_isListening) return;
+    // Map Android/iOS sound level (typically -2 to 10+ dB) into 0.0 .. 1.0 range
+    final normalized = ((level + 2.0) / 10.0).clamp(0.0, 1.0);
+    setState(() {
+      // Smooth interpolation for fluid wavy reactivity
+      _soundLevel = (_soundLevel * 0.25) + (normalized * 0.75);
+    });
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    if (!mounted) return;
+    final words = result.recognizedWords.trim();
+    if (words.isNotEmpty) {
+      setState(() {
+        _spokenWords = words;
+        _textController.text = _spokenWords;
+        _textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _textController.text.length),
+        );
+      });
+    }
+
+    if (result.finalResult && words.isNotEmpty) {
+      _finalResultDebounceTimer?.cancel();
+      _finalResultDebounceTimer = Timer(const Duration(milliseconds: 450), () {
+        if (mounted && _isListening) {
+          _stopListening(autoSubmit: true);
+        }
+      });
+    }
+  }
+
+  void _onSpeechStatus(String status) {
+    debugPrint('[SpeechToText] Status: $status');
+    if (!mounted) return;
+
+    if (status == 'listening') {
+      if (!_isListening) {
+        setState(() => _isListening = true);
+      }
+    } else if (status == 'notListening') {
+      // Do NOT stop speech immediately! Engine is finalizing transcription.
+      if (_isListening) {
+        _finalResultDebounceTimer?.cancel();
+        _finalResultDebounceTimer = Timer(const Duration(milliseconds: 1600), () {
+          if (mounted && _isListening) {
+            _stopListening(autoSubmit: true);
+          }
+        });
+      }
+    } else if (status == 'done') {
+      _finalResultDebounceTimer?.cancel();
+      if (_isListening) {
+        _stopListening(autoSubmit: true);
+      }
+    }
+  }
+
+  void _onSpeechError(SpeechRecognitionError error) {
+    debugPrint('[SpeechToText] Error: ${error.errorMsg}');
+    if (mounted && _isListening) {
+      _stopListening(autoSubmit: false);
+    }
   }
 
   void _scrollToBottom() {
@@ -281,6 +559,11 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
         _isLoading = false;
       });
       _scrollToBottom();
+
+      // If the user's message was spoken or contains voice action, speak reply
+      if (_spokenWords.isNotEmpty) {
+        TtsService().speak(result.text);
+      }
     }
   }
 
@@ -434,7 +717,11 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                   ),
                   onPressed: () {
                     HapticFeedback.lightImpact();
-                    _sendMessage(prompt);
+                    if (prompt.contains('Speak')) {
+                      _toggleListening();
+                    } else {
+                      _sendMessage(prompt);
+                    }
                   },
                 );
               },
@@ -549,13 +836,39 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                msg['content'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
-                                  color: isUser ? Colors.white : colors.textMain,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      msg['content'] ?? '',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.4,
+                                        color: isUser ? Colors.white : colors.textMain,
+                                      ),
+                                    ),
+                                  ),
+                                  if (!isUser &&
+                                      (msg['content'] ?? '').toString().isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          HapticFeedback.lightImpact();
+                                          TtsService().speak(msg['content'] ?? '');
+                                        },
+                                        child: Icon(
+                                          Icons.volume_up_rounded,
+                                          size: 16,
+                                          color:
+                                              colors.textMuted.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                               if (msg['actions'] != null &&
                                   (msg['actions'] as List).isNotEmpty) ...[
@@ -711,12 +1024,87 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
             ),
           ),
 
+          // Live Voice Listening Banner with Equalizer Bars
+          if (_isListening)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF5350).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFEF5350).withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Dynamic 5-bar sound equalizer reacting to voice volume
+                    AnimatedBuilder(
+                      animation: Listenable.merge([_waveController, _pulseController]),
+                      builder: (context, child) {
+                        return SoundBarsVisualizer(
+                          soundLevel: _soundLevel,
+                          pulseValue: _pulseController.value,
+                          barColor: const Color(0xFFEF5350),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _spokenWords.isEmpty
+                            ? 'Listening... Speak e.g., "Spent ₹250 on Lunch"'
+                            : _spokenWords,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textMain,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _stopListening(autoSubmit: true),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF5350),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_rounded,
+                                size: 14, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Done',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Input Bar
           Padding(
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
-              top: 8,
+              top: 4,
               bottom: MediaQuery.of(context).viewInsets.bottom + 16,
             ),
             child: Row(
@@ -728,7 +1116,9 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                     textInputAction: TextInputAction.send,
                     onSubmitted: _sendMessage,
                     decoration: InputDecoration(
-                      hintText: 'Ask about your budget, savings, tips...',
+                      hintText: _isListening
+                          ? 'Listening to you speak...'
+                          : 'Ask Aurex or speak a transaction...',
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                       fillColor: colors.surface2,
@@ -752,11 +1142,79 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Voice Recognition Mic Button with Sound-Reactive Wavy Ripples
+                Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (_isListening)
+                      Positioned.fill(
+                        child: AnimatedBuilder(
+                          animation: _waveController,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              painter: VoiceWaveRipplesPainter(
+                                waveAnimation: _waveController.value,
+                                soundLevel: _soundLevel,
+                                baseColor: const Color(0xFFEF5350),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) {
+                        final bounceScale = _isListening
+                            ? (1.0 + (0.12 * _soundLevel)).clamp(1.0, 1.15)
+                            : 1.0;
+                        return Transform.scale(
+                          scale: bounceScale,
+                          child: IconButton.filled(
+                            onPressed: _isLoading ? null : _toggleListening,
+                            icon: Icon(
+                              _isListening
+                                  ? Icons.graphic_eq_rounded
+                                  : Icons.mic_rounded,
+                              size: 22,
+                            ),
+                            tooltip: _isListening
+                                ? 'Stop & send transaction'
+                                : 'Speak to add transaction',
+                            style: IconButton.styleFrom(
+                              backgroundColor: _isListening
+                                  ? const Color(0xFFEF5350)
+                                  : colors.surface2,
+                              foregroundColor: _isListening
+                                  ? Colors.white
+                                  : colors.primary,
+                              shape: const CircleBorder(),
+                              padding: const EdgeInsets.all(12),
+                              side: _isListening
+                                  ? null
+                                  : (colors.borderSubtle == Colors.transparent
+                                      ? null
+                                      : BorderSide(color: colors.borderSubtle)),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                // Send Button
                 IconButton.filled(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _sendMessage(_textController.text);
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          HapticFeedback.mediumImpact();
+                          if (_isListening) {
+                            _stopListening(autoSubmit: true);
+                          } else {
+                            _sendMessage(_textController.text);
+                          }
+                        },
                   icon: const Icon(Icons.arrow_upward_rounded),
                   style: IconButton.styleFrom(
                     backgroundColor: colors.primary,
@@ -770,6 +1228,102 @@ class _AIAssistantSheetState extends State<AIAssistantSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Outward-propagating fluid wavy ripples that react in real-time to speech volume
+class VoiceWaveRipplesPainter extends CustomPainter {
+  final double waveAnimation;
+  final double soundLevel;
+  final Color baseColor;
+
+  VoiceWaveRipplesPainter({
+    required this.waveAnimation,
+    required this.soundLevel,
+    required this.baseColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final baseRadius = size.width / 2;
+
+    // 1. Fluid Sound-Reactive Radial Glow Fill
+    final glowRadius = baseRadius + 14 + (24 * soundLevel);
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          baseColor.withValues(alpha: (0.16 + 0.35 * soundLevel).clamp(0.0, 0.6)),
+          baseColor.withValues(alpha: (0.05 + 0.15 * soundLevel).clamp(0.0, 0.3)),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.65, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
+    canvas.drawCircle(center, glowRadius, glowPaint);
+
+    // 2. Three Outward-Propagating Wavy Ripple Rings
+    for (int i = 0; i < 3; i++) {
+      final phase = (waveAnimation + (i * 0.33)) % 1.0;
+      final waveRadius = baseRadius + (phase * (14.0 + 22.0 * soundLevel));
+      final opacity =
+          ((1.0 - phase) * (0.35 + 0.65 * soundLevel)).clamp(0.0, 1.0);
+      final strokeWidth =
+          (1.5 + (2.0 * soundLevel) * (1.0 - phase)).clamp(1.0, 4.0);
+
+      final ringPaint = Paint()
+        ..color = baseColor.withValues(alpha: opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+
+      canvas.drawCircle(center, waveRadius, ringPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant VoiceWaveRipplesPainter oldDelegate) {
+    return oldDelegate.waveAnimation != waveAnimation ||
+        oldDelegate.soundLevel != soundLevel ||
+        oldDelegate.baseColor != baseColor;
+  }
+}
+
+/// 5 vertical equalizer bars dancing to speech volume
+class SoundBarsVisualizer extends StatelessWidget {
+  final double soundLevel;
+  final double pulseValue;
+  final Color barColor;
+
+  const SoundBarsVisualizer({
+    super.key,
+    required this.soundLevel,
+    required this.pulseValue,
+    required this.barColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final barMultipliers = [0.45, 0.75, 1.0, 0.75, 0.45];
+    final barBases = [5.0, 7.0, 9.0, 7.0, 5.0];
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: List.generate(5, (index) {
+        final height = barBases[index] +
+            (18.0 * soundLevel * barMultipliers[index]) +
+            (4.0 * pulseValue * barMultipliers[index]);
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+          width: 3.2,
+          height: height.clamp(4.0, 26.0),
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
     );
   }
 }

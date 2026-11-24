@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/app_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/update_checker_service.dart';
 import '../../services/widget_sync_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/add_transaction_dialog.dart';
@@ -12,9 +13,10 @@ import '../../widgets/ai_assistant_sheet.dart';
 import '../../widgets/brain_icon.dart';
 import '../../widgets/debt_dialogs.dart';
 import '../../widgets/offline_banner.dart';
-import '../../widgets/profile_dialog.dart';
 import '../../widgets/user_avatar.dart';
+import '../../widgets/voice_assistant_dialog.dart';
 import '../auth/login_screen.dart';
+import '../settings/settings_screen.dart';
 import 'analytics_tab.dart';
 import 'budget_tab.dart';
 import 'debts_tab.dart';
@@ -41,6 +43,7 @@ class _DashboardShellState extends State<DashboardShell> {
       if (pending != null) {
         _handleWidgetUri(pending);
       }
+      UpdateCheckerService.instance.checkOnStartup(context);
     });
 
     WidgetSyncService().init();
@@ -68,7 +71,12 @@ class _DashboardShellState extends State<DashboardShell> {
 
     Future.delayed(const Duration(milliseconds: 150), () {
       if (!mounted || _isModalOpen) return;
-      if (host == 'add-expense' || path.contains('add-expense') || full.contains('add-expense')) {
+      if (host == 'voice' ||
+          host == 'voice-assistant' ||
+          full.contains('voice') ||
+          full.contains('speak')) {
+        VoiceAssistantDialog.show(context);
+      } else if (host == 'add-expense' || path.contains('add-expense') || full.contains('add-expense')) {
         _openAddTransaction(initialType: 'EXPENSE');
       } else if (host == 'add-income' || path.contains('add-income') || full.contains('add-income')) {
         _openAddTransaction(initialType: 'INCOME');
@@ -112,21 +120,100 @@ class _DashboardShellState extends State<DashboardShell> {
     });
   }
 
-  void _openAIAssistant() {
+  void _openAIAssistant({bool autoListen = false, String? initialPrompt}) {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AIAssistantSheet(),
+      builder: (_) => AIAssistantSheet(
+        autoListen: autoListen,
+        initialPrompt: initialPrompt,
+      ),
+    );
+  }
+
+  Widget _buildVoiceFloatingButton(AppColors colors) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colors.primary,
+            colors.secondary,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.40),
+            blurRadius: 10,
+            spreadRadius: 1.0,
+            offset: const Offset(0, 2.5),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.40),
+          width: 1.3,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: () => VoiceAssistantDialog.show(context),
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const BrainIcon(
+                  color: Colors.white,
+                  size: 20,
+                ),
+                Positioned(
+                  right: -3,
+                  bottom: -3,
+                  child: Container(
+                    padding: const EdgeInsets.all(2.0),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.5),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.mic_rounded,
+                      size: 7.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   void _openProfile() {
     HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (_) => const ProfileDialog(),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
   }
 
@@ -202,27 +289,51 @@ class _DashboardShellState extends State<DashboardShell> {
           ),
         ),
         actions: [
-          // Aurex AI Assistant Button in AppBar
-          IconButton(
-            tooltip: 'Aurex AI Assistant',
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colors.primarySoft,
-                borderRadius: BorderRadius.circular(10),
-                border: appProvider.isDarkMode
-                    ? null
-                    : Border.all(
-                        color: colors.primary.withValues(alpha: 0.3),
+          // Highlighted Aurex AI Assistant Button in AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _openAIAssistant,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.primary,
+                          colors.secondary,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.38),
+                          blurRadius: 10,
+                          spreadRadius: 0.5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
                         width: 1,
                       ),
-              ),
-              child: BrainIcon(
-                color: colors.primary,
-                size: 20,
+                    ),
+                    child: const Center(
+                      child: BrainIcon(
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-            onPressed: _openAIAssistant,
           ),
 
           // Profile Button
@@ -270,39 +381,55 @@ class _DashboardShellState extends State<DashboardShell> {
           ),
         ],
       ),
-      // Clean Context-Aware Floating Action Button
+      // Clean Context-Aware Floating Action Button with Quick Voice Assistant
       floatingActionButton: _currentIndex == 2
-          ? FloatingActionButton.extended(
-              heroTag: 'add_debt_fab',
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => const AddPersonDebtDialog(),
-                );
-              },
-              backgroundColor: colors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text(
-                'Lend / Borrow',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            )
-          : (_currentIndex == 0 || _currentIndex == 1)
-              ? FloatingActionButton(
-                  heroTag: 'add_transaction_fab',
-                  onPressed: _openAddTransaction,
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildVoiceFloatingButton(colors),
+                const SizedBox(height: 12),
+                FloatingActionButton.extended(
+                  heroTag: 'add_debt_fab',
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const AddPersonDebtDialog(),
+                    );
+                  },
                   backgroundColor: colors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text(
+                    'Lend / Borrow',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  child: const Icon(Icons.add_rounded, size: 28),
+                ),
+              ],
+            )
+          : (_currentIndex == 0 || _currentIndex == 1)
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildVoiceFloatingButton(colors),
+                    const SizedBox(height: 12),
+                    FloatingActionButton(
+                      heroTag: 'add_transaction_fab',
+                      onPressed: _openAddTransaction,
+                      backgroundColor: colors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(Icons.add_rounded, size: 28),
+                    ),
+                  ],
                 )
               : null,
       bottomNavigationBar: Container(

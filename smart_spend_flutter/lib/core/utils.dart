@@ -1,23 +1,22 @@
 import 'package:intl/intl.dart';
+import '../models/transaction_model.dart';
+import '../models/debt_model.dart';
 
 class AppUtils {
-  static final NumberFormat _currencyFormat = NumberFormat.currency(
-    locale: 'en_IN',
-    symbol: '₹',
-    decimalDigits: 0,
-  );
+  static String currentCurrencySymbol = '₹';
+  static bool hideBalances = false;
 
-  static final NumberFormat _decimalCurrencyFormat = NumberFormat.currency(
-    locale: 'en_IN',
-    symbol: '₹',
-    decimalDigits: 2,
-  );
+  static final NumberFormat _formatter = NumberFormat('#,##,##0', 'en_IN');
+  static final NumberFormat _decimalFormatter = NumberFormat('#,##,##0.00', 'en_IN');
 
   static String formatCurrency(num amount, {bool showDecimals = false}) {
-    if (showDecimals && (amount % 1 != 0)) {
-      return _decimalCurrencyFormat.format(amount);
-    }
-    return _currencyFormat.format(amount);
+    if (hideBalances) return '••••••';
+    final sign = amount < 0 ? '-' : '';
+    final absAmount = amount.abs();
+    final formatted = showDecimals && (absAmount % 1 != 0)
+        ? _decimalFormatter.format(absAmount)
+        : _formatter.format(absAmount);
+    return '$sign$currentCurrencySymbol$formatted';
   }
 
   static String formatDate(DateTime date) {
@@ -43,6 +42,40 @@ class AppUtils {
     } else {
       return '${DateFormat('dd/MM/yyyy').format(date)} $time';
     }
+  }
+
+  /// Generate CSV data export for transactions and debts
+  static String generateCsvExport({
+    required List<TransactionModel> transactions,
+    required List<DebtModel> debts,
+  }) {
+    final buffer = StringBuffer();
+    // 1. Transactions Header
+    buffer.writeln('--- SMART_SPEND TRANSACTIONS EXPORT ---');
+    buffer.writeln('Date,Type,Title,Category,Amount ($currentCurrencySymbol),Notes');
+    for (final t in transactions) {
+      final date = DateFormat('yyyy-MM-dd HH:mm').format(t.date);
+      final type = t.type;
+      final title = '"${t.title.replaceAll('"', '""')}"';
+      final category = '"${t.category.replaceAll('"', '""')}"';
+      final amount = t.amount.toStringAsFixed(2);
+      buffer.writeln('$date,$type,$title,$category,$amount');
+    }
+
+    buffer.writeln('');
+    // 2. Debts / Khata Header
+    buffer.writeln('--- KHATA & DEBTS EXPORT ---');
+    buffer.writeln('Person,Direction,Net Balance ($currentCurrencySymbol),Status,Phone');
+    for (final d in debts) {
+      final person = '"${d.personName.replaceAll('"', '""')}"';
+      final dir = d.type;
+      final net = d.totalOwed.toStringAsFixed(2);
+      final status = d.isSettled ? 'Settled' : 'Pending';
+      final phone = d.phoneNumber ?? '';
+      buffer.writeln('$person,$dir,$net,$status,$phone');
+    }
+
+    return buffer.toString();
   }
 
   static String getCategoryIcon(String category, {String? type}) {

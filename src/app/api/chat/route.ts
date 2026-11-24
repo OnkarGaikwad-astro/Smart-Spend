@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-
-// Initialize the Google Gen AI SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+import { verifyAuth } from '@/lib/auth-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { messages, context } = body;
+    // 1. Verify User Authentication
+    const auth = await verifyAuth(req);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to chat with Aurex AI.' },
+        { status: 401 }
+      );
+    }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
         { error: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.' },
         { status: 500 }
       );
     }
+
+    const body = await req.json();
+    const { messages, context } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages are required' }, { status: 400 });
@@ -35,10 +43,10 @@ Here is the user's current financial context:
 - Total Expenses: ₹${context.totalExpense}
 
 All Transactions History:
-${context.transactions.map((t: any) => `- ${t.date.split('T')[0]}: ${t.title} (${t.category}) - ${t.type === 'INCOME' ? '+' : '-'}₹${Math.abs(t.amount)}`).join('\n')}
+${(context.transactions || []).map((t: any) => `- ${t.date ? t.date.split('T')[0] : 'N/A'}: ${t.title} (${t.category}) - ${t.type === 'INCOME' ? '+' : '-'}₹${Math.abs(t.amount)}`).join('\n')}
 
 Active Goals:
-${context.goals.map((g: any) => `- ${g.name}: ₹${g.saved} / ₹${g.target} saved`).join('\n')}
+${(context.goals || []).map((g: any) => `- ${g.name}: ₹${g.saved} / ₹${g.target} saved`).join('\n')}
 
 Please use this context to answer the user's questions in a short, conversational, and helpful manner. Avoid huge blocks of text. Use emojis occasionally!
 `;
@@ -48,6 +56,7 @@ Please use this context to answer the user's questions in a short, conversationa
     const lastUserMessage = messages[messages.length - 1].content;
 
     // Call Gemini API
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: contextString + '\n\nUser Question: ' + lastUserMessage,

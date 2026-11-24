@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="voice_assistant"
+        android:enabled="true"
+        android:icon="@drawable/launch_splash_app_icon"
+        android:shortcutShortLabel="@string/shortcut_voice_short"
+        android:shortcutLongLabel="@string/shortcut_voice_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.aurelix.smartspend.smart_spend_flutter"
+            android:targetClass="com.aurelix.smartspend.smart_spend_flutter.MainActivity"
+            android:data="smartspend://voice-assistant" />
+    </shortcut>
+</shortcuts>

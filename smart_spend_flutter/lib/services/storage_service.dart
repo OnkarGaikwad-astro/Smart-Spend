@@ -65,9 +65,9 @@ class StorageService {
     await _transactionsBox.put(txn.id, txn.toMap());
   }
 
-  Future<void> saveAllTransactions(List<TransactionModel> txns) async {
-    final entries = {for (var t in txns) t.id: t.toMap()};
-    await _transactionsBox.putAll(entries);
+  Future<void> saveTransactions(List<TransactionModel> txns) async {
+    final map = {for (var t in txns) t.id: t.toMap()};
+    await _transactionsBox.putAll(map);
   }
 
   Future<void> deleteTransaction(String id) async {
@@ -90,9 +90,9 @@ class StorageService {
     await _budgetsBox.put(budget.id, budget.toMap());
   }
 
-  Future<void> saveAllBudgets(List<BudgetModel> budgets) async {
-    final entries = {for (var b in budgets) b.id: b.toMap()};
-    await _budgetsBox.putAll(entries);
+  Future<void> saveBudgets(List<BudgetModel> budgets) async {
+    final map = {for (var b in budgets) b.id: b.toMap()};
+    await _budgetsBox.putAll(map);
   }
 
   Future<void> deleteBudget(String id) async {
@@ -115,16 +115,16 @@ class StorageService {
     await _goalsBox.put(goal.id, goal.toMap());
   }
 
-  Future<void> saveAllGoals(List<GoalModel> goals) async {
-    final entries = {for (var g in goals) g.id: g.toMap()};
-    await _goalsBox.putAll(entries);
+  Future<void> saveGoals(List<GoalModel> goals) async {
+    final map = {for (var g in goals) g.id: g.toMap()};
+    await _goalsBox.putAll(map);
   }
 
   Future<void> deleteGoal(String id) async {
     await _goalsBox.delete(id);
   }
 
-  // --- Debts (Lent & Borrowed) ---
+  // --- Debts / Khata ---
   List<DebtModel> getAllDebts() {
     final list = <DebtModel>[];
     for (var key in _debtsBox.keys) {
@@ -133,8 +133,8 @@ class StorageService {
         list.add(DebtModel.fromMap(val));
       }
     }
-    // Sort descending by most recent activity
-    list.sort((a, b) => b.lastActivityDate.compareTo(a.lastActivityDate));
+    // Sort descending by updated date
+    list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return list;
   }
 
@@ -142,18 +142,18 @@ class StorageService {
     await _debtsBox.put(debt.id, debt.toMap());
   }
 
-  Future<void> saveAllDebts(List<DebtModel> debts) async {
-    final entries = {for (var d in debts) d.id: d.toMap()};
-    await _debtsBox.putAll(entries);
+  Future<void> saveDebts(List<DebtModel> debts) async {
+    final map = {for (var d in debts) d.id: d.toMap()};
+    await _debtsBox.putAll(map);
   }
 
   Future<void> deleteDebt(String id) async {
     await _debtsBox.delete(id);
   }
 
-  // --- User Profile ---
+  // --- Profile ---
   UserProfileModel? getUserProfile() {
-    final val = _profileBox.get('current_profile');
+    final val = _profileBox.get('current_user');
     if (val is Map) {
       return UserProfileModel.fromMap(val);
     }
@@ -161,11 +161,11 @@ class StorageService {
   }
 
   Future<void> saveUserProfile(UserProfileModel profile) async {
-    await _profileBox.put('current_profile', profile.toMap());
+    await _profileBox.put('current_user', profile.toMap());
   }
 
   Future<void> clearUserProfile() async {
-    await _profileBox.delete('current_profile');
+    await _profileBox.delete('current_user');
   }
 
   // --- Sync Queue ---
@@ -192,15 +192,146 @@ class StorageService {
 
   int get pendingSyncCount => _syncQueueBox.length;
 
-  // --- Settings ---
+  // --- Settings & Preferences ---
+  String getThemeModeString() {
+    return _settingsBox.get('theme_mode', defaultValue: 'system') as String;
+  }
+
+  Future<void> setThemeModeString(String mode) async {
+    await _settingsBox.put('theme_mode', mode);
+    await _settingsBox.put('is_dark_mode', mode == 'dark');
+  }
+
   bool isDarkMode() {
-    return _settingsBox.get('is_dark_mode', defaultValue: true) as bool;
+    final mode = getThemeModeString();
+    if (mode == 'system') {
+      return _settingsBox.get('is_dark_mode', defaultValue: true) as bool;
+    }
+    return mode == 'dark';
   }
 
   Future<void> setDarkMode(bool isDark) async {
     await _settingsBox.put('dark_aesthetic_applied_v3', true);
     await _settingsBox.put('is_dark_mode', isDark);
+    await _settingsBox.put('theme_mode', isDark ? 'dark' : 'light');
   }
+
+  String getColorPalette() {
+    return _settingsBox.get('color_palette', defaultValue: 'ocean') as String;
+  }
+
+  Future<void> setColorPalette(String palette) async {
+    await _settingsBox.put('color_palette', palette);
+  }
+
+  String getCurrencySymbol() {
+    return _settingsBox.get('currency_symbol', defaultValue: '₹') as String;
+  }
+
+  Future<void> setCurrencySymbol(String symbol) async {
+    await _settingsBox.put('currency_symbol', symbol);
+  }
+
+  bool isHideBalances() {
+    return false; // Privacy mode removed per user request
+  }
+
+  Future<void> setHideBalances(bool hide) async {
+    await _settingsBox.put('hide_balances', false);
+  }
+
+  // --- Extended Preferences ---
+  String getDefaultPaymentMode() {
+    return _settingsBox.get('default_payment_mode', defaultValue: 'UPI') as String;
+  }
+
+  Future<void> setDefaultPaymentMode(String mode) async {
+    await _settingsBox.put('default_payment_mode', mode);
+  }
+
+  String getDefaultCategory() {
+    return _settingsBox.get('default_category', defaultValue: 'Food & Dining') as String;
+  }
+
+  Future<void> setDefaultCategory(String cat) async {
+    await _settingsBox.put('default_category', cat);
+  }
+
+  bool isAutoCategorizeEnabled() {
+    return _settingsBox.get('smart_auto_categorize', defaultValue: true) as bool;
+  }
+
+  Future<void> setAutoCategorizeEnabled(bool enabled) async {
+    await _settingsBox.put('smart_auto_categorize', enabled);
+  }
+
+  bool isShowDecimalsEnabled() {
+    return _settingsBox.get('show_decimals', defaultValue: false) as bool;
+  }
+
+  Future<void> setShowDecimalsEnabled(bool enabled) async {
+    await _settingsBox.put('show_decimals', enabled);
+  }
+
+  bool isWeekStartMonday() {
+    return _settingsBox.get('week_start_monday', defaultValue: true) as bool;
+  }
+
+  Future<void> setWeekStartMonday(bool monday) async {
+    await _settingsBox.put('week_start_monday', monday);
+  }
+
+  bool isAutoSpeakAiEnabled() {
+    return _settingsBox.get('auto_speak_ai', defaultValue: true) as bool;
+  }
+
+  Future<void> setAutoSpeakAiEnabled(bool enabled) async {
+    await _settingsBox.put('auto_speak_ai', enabled);
+  }
+
+  bool isSoundEffectsEnabled() {
+    return _settingsBox.get('sound_effects_enabled', defaultValue: true) as bool;
+  }
+
+  Future<void> setSoundEffectsEnabled(bool enabled) async {
+    await _settingsBox.put('sound_effects_enabled', enabled);
+  }
+
+  bool isHapticsEnabled() {
+    return _settingsBox.get('haptics_enabled', defaultValue: true) as bool;
+  }
+
+  Future<void> setHapticsEnabled(bool enabled) async {
+    await _settingsBox.put('haptics_enabled', enabled);
+  }
+
+  bool isDailyReminderEnabled() {
+    return _settingsBox.get('daily_reminder_enabled', defaultValue: true) as bool;
+  }
+
+  Future<void> setDailyReminderEnabled(bool enabled) async {
+    await _settingsBox.put('daily_reminder_enabled', enabled);
+  }
+
+  bool isBudgetAlertsEnabled() {
+    return _settingsBox.get('budget_alerts_enabled', defaultValue: true) as bool;
+  }
+
+  Future<void> setBudgetAlertsEnabled(bool enabled) async {
+    await _settingsBox.put('budget_alerts_enabled', enabled);
+  }
+
+  bool isDebtRemindersEnabled() {
+    return _settingsBox.get('debt_reminders_enabled', defaultValue: true) as bool;
+  }
+
+  Future<void> setDebtRemindersEnabled(bool enabled) async {
+    await _settingsBox.put('debt_reminders_enabled', enabled);
+  }
+
+  // --- Custom Gemini API Key ---
+  String? getCustomGeminiApiKey() => _settingsBox.get('custom_gemini_api_key');
+  Future<void> setCustomGeminiApiKey(String? key) => _settingsBox.put('custom_gemini_api_key', key);
 
   Future<void> clearAll() async {
     await _transactionsBox.clear();
