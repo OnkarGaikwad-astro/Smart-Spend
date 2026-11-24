@@ -5,9 +5,9 @@ class AppConstants {
   // App Versioning & Release
   static const String appVersion = '1.0.0';
   static const int appBuildNumber = 1;
-  static const String githubRepo = 'astronkar/SmartSpend';
-  static const String githubReleasesUrl = 'https://github.com/astronkar/SmartSpend/releases/latest';
-  static const String githubReleasesApiUrl = 'https://api.github.com/repos/astronkar/SmartSpend/releases/latest';
+  static const String githubRepo = 'OnkarGaikwad-astro/Smart-Spend';
+  static const String githubReleasesUrl = 'https://github.com/OnkarGaikwad-astro/Smart-Spend/releases/latest';
+  static const String githubReleasesApiUrl = 'https://api.github.com/repos/OnkarGaikwad-astro/Smart-Spend/releases/latest';
 
   // Supabase Configuration
   // Can be overridden at build time via: --dart-define=SUPABASE_URL=https://...
