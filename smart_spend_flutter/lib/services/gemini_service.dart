@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants.dart';
+import 'storage_service.dart';
 
 class AurexChatResult {
   final String text;
