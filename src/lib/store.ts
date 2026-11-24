@@ -152,6 +152,16 @@ export const useAppStore = create<AppState>()(
             avatar_url: profile.avatar_url || sessionAvatar || null
           } as UserProfile 
         });
+      } else if (!get().userProfile && typeof document !== 'undefined') {
+        const match = document.cookie.match(/(?:^|; )smartspend_user=([^;]*)/);
+        if (match && match[1]) {
+          try {
+            const parsed = JSON.parse(decodeURIComponent(match[1]));
+            if (parsed?.email || parsed?.id) {
+              set({ userProfile: parsed as UserProfile });
+            }
+          } catch {}
+        }
       }
       if (!txnsError && txns) set({ transactions: txns as Transaction[] });
       if (!budgetsError && budgets) set({ budgets: budgets as Budget[] });
@@ -164,19 +174,27 @@ export const useAppStore = create<AppState>()(
   },
 
   updateProfile: async (profileUpdates: Partial<UserProfile>) => {
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+    set((state) => {
+      const updated = state.userProfile ? { ...state.userProfile, ...profileUpdates } : null;
+      if (updated && typeof document !== 'undefined') {
+        const maxAge = 60 * 60 * 24 * 30;
+        const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = `smartspend_user=${encodeURIComponent(JSON.stringify(updated))}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+      }
+      return { userProfile: updated };
+    });
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(profileUpdates)
-      .eq('id', userData.user.id);
-      
-    if (!error) {
-      set((state) => ({
-        userProfile: state.userProfile ? { ...state.userProfile, ...profileUpdates } : null
-      }));
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) return;
+
+      await supabase
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('id', userData.user.id);
+    } catch (e) {
+      console.error("Failed to update profile in Supabase.", e);
     }
   },
 

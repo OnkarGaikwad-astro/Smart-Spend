@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Space_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,7 @@ export default function RootLayout({
     <html lang="en" className={cn("light", "font-sans", dmSans.variable, spaceMono.variable)}>
       <body className={`${dmSans.className} min-h-screen text-[var(--color-text-main)] flex flex-col antialiased`}>
         {children}
+        <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
       </body>
     </html>
   );

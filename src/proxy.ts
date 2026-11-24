@@ -62,18 +62,40 @@ export async function proxy(request: NextRequest) {
   )
 
   // Use getUser() to securely validate the JWT on the server
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data?.user || null
+  } catch {
+    user = null
+  }
+
+  // Check if user is authenticated via direct Google Sign-In cookie
+  const googleUserCookie = request.cookies.get('smartspend_user')?.value
+  let hasGoogleUser = false
+  if (googleUserCookie) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(googleUserCookie))
+      if (parsed && (parsed.email || parsed.id)) {
+        hasGoogleUser = true
+      }
+    } catch {
+      hasGoogleUser = false
+    }
+  }
+
+  const isAuthenticated = Boolean(user || hasGoogleUser)
 
   // Protect /dashboard routes
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!user) {
+    if (!isAuthenticated) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
   // Redirect /login or / to /dashboard if already logged in
   if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/') {
-    if (user) {
+    if (isAuthenticated) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

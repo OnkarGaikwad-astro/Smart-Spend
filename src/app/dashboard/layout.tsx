@@ -58,7 +58,12 @@ export default function DashboardLayout({
           <div className="flex items-center gap-3">
             <button 
               onClick={async () => {
-                await supabase.auth.signOut();
+                try {
+                  await supabase.auth.signOut();
+                } catch {}
+                // Clear cookies
+                document.cookie = "smartspend_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "smartspend_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                 useAppStore.setState({ userProfile: null, transactions: [], budgets: [], goals: [] });
                 router.push('/login');
               }}
