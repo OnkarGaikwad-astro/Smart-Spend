@@ -55,15 +55,23 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release --android-skip-build-dependency-validation
 
+      - name: Extract Version from pubspec.yaml
+        id: app_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Prepare APK Asset
         id: prepare_apk
         run: |
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk dist/SmartSpend.apk
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG_NAME="${GITHUB_REF_NAME}"
-            cp build/app/outputs/flutter-apk/app-release.apk "dist/SmartSpend-${TAG_NAME}.apk"
-          fi
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/SmartSpend-${{ steps.app_version.outputs.tag }}.apk"
           ls -lh dist
 
       - name: Upload APK Artifact
@@ -73,14 +81,15 @@ jobs:
           path: dist/*
           retention-days: 30
 
-      - name: Publish to GitHub Releases (On Tag Push)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish to GitHub Releases
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.app_version.outputs.tag }}
+          name: SmartSpend ${{ steps.app_version.outputs.tag }}
           files: |
             dist/SmartSpend.apk
-            dist/*.apk
-          name: SmartSpend ${{ github.ref_name }}
+            dist/SmartSpend-${{ steps.app_version.outputs.tag }}.apk
           generate_release_notes: true
           draft: false
           prerelease: false
