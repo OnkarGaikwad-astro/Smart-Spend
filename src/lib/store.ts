@@ -209,8 +209,15 @@ export const useAppStore = create<AppState>()(
     try {
       const supabase = createClient();
       const { id, ...insertData } = newTxn;
+
+      // Ensure user_id is set (same as Flutter SyncService)
+      const { data: { user } } = await supabase.auth.getUser();
+      const payload = {
+        ...insertData,
+        ...(user?.id ? { user_id: user.id } : {})
+      };
       
-      const { data, error } = await supabase.from('transactions').insert([insertData]).select().single();
+      const { data, error } = await supabase.from('transactions').insert([payload]).select().single();
       
       if (error) throw error;
       
@@ -264,8 +271,13 @@ export const useAppStore = create<AppState>()(
     try {
       const supabase = createClient();
       const { id, ...insertData } = newBudget;
+      const { data: { user } } = await supabase.auth.getUser();
+      const payload = {
+        ...insertData,
+        ...(user?.id ? { user_id: user.id } : {})
+      };
       
-      const { data, error } = await supabase.from('budgets').insert([insertData]).select().single();
+      const { data, error } = await supabase.from('budgets').insert([payload]).select().single();
       
       if (error) throw error;
       
@@ -318,7 +330,12 @@ export const useAppStore = create<AppState>()(
     try {
       const supabase = createClient();
       const { id, ...insertData } = newGoal;
-      const { data, error } = await supabase.from('goals').insert([insertData]).select().single();
+      const { data: { user } } = await supabase.auth.getUser();
+      const payload = {
+        ...insertData,
+        ...(user?.id ? { user_id: user.id } : {})
+      };
+      const { data, error } = await supabase.from('goals').insert([payload]).select().single();
       if (error) throw error;
       if (data) set(state => ({ goals: state.goals.map(g => g.id === id ? data as Goal : g) }));
     } catch (e) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAppStore } from "@/lib/store";
@@ -22,6 +22,111 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const handleGoogleCredentialResponse = async (response: any) => {
+    try {
+      setIsGoogleLoading(true);
+      setError(null);
+
+      const idToken = response.credential;
+      if (!idToken) {
+        throw new Error("Google did not return an ID token.");
+      }
+
+      // Exactly as done in Flutter (signInWithIdToken)
+      const { data, error: authError } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: idToken,
+      });
+
+      if (authError) throw authError;
+
+      if (data?.session && data?.user) {
+        const meta = data.user.user_metadata;
+        const profile = {
+          id: data.user.id,
+          email: data.user.email || "",
+          full_name:
+            meta?.full_name ||
+            meta?.name ||
+            data.user.email?.split("@")[0] ||
+            "User",
+          avatar_url: meta?.avatar_url || meta?.picture || null,
+        };
+
+        // 1. Store in Zustand
+        useAppStore.setState({ userProfile: profile });
+
+        // 2. Set persistent cookies for server proxy & session
+        const maxAge = 60 * 60 * 24 * 30; // 30 days
+        const secureFlag =
+          window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `smartspend_user=${encodeURIComponent(
+          JSON.stringify(profile)
+        )}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+
+        // 3. Fetch user's data from Supabase
+        await useAppStore.getState().fetchData();
+
+        // 4. Navigate to dashboard
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    const initGsi = () => {
+      if (typeof window === "undefined" || !(window as any).google?.accounts?.id) {
+        return false;
+      }
+
+      (window as any).google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      const container = document.getElementById("google-signin-btn");
+      if (container && active) {
+        container.innerHTML = "";
+        (window as any).google.accounts.id.renderButton(container, {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          width: 384,
+          logo_alignment: "left",
+        });
+      }
+      return true;
+    };
+
+    if (!initGsi()) {
+      const interval = setInterval(() => {
+        if (initGsi()) clearInterval(interval);
+      }, 150);
+      return () => clearInterval(interval);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleGoogleSignIn = () => {
+    setError(null);
+    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.prompt();
+    } else {
+      setError("Google Sign-In is still initializing. Please try again.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,106 +164,6 @@ export default function LoginPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsGoogleLoading(true);
-      setError(null);
-
-      if (typeof window === "undefined") return;
-
-      const triggerGoogleAuth = () => {
-        const googleObj = (window as any).google;
-        if (!googleObj?.accounts?.oauth2) {
-          setError("Google Sign-In is still initializing. Please try again.");
-          setIsGoogleLoading(false);
-          return;
-        }
-
-        const client = googleObj.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: "openid email profile",
-          callback: async (tokenResponse: any) => {
-            if (tokenResponse.error) {
-              setError(
-                tokenResponse.error_description ||
-                  tokenResponse.error ||
-                  "Google Sign-In was cancelled or failed."
-              );
-              setIsGoogleLoading(false);
-              return;
-            }
-
-            if (tokenResponse.access_token) {
-              try {
-                const res = await fetch(
-                  "https://www.googleapis.com/oauth2/v3/userinfo",
-                  {
-                    headers: {
-                      Authorization: `Bearer ${tokenResponse.access_token}`,
-                    },
-                  }
-                );
-
-                if (!res.ok) {
-                  throw new Error("Failed to fetch Google profile details.");
-                }
-
-                const userInfo = await res.json();
-                const userProfile = {
-                  id: userInfo.sub || `google_${Date.now()}`,
-                  email: userInfo.email,
-                  full_name: userInfo.name || userInfo.email?.split("@")[0] || "User",
-                  avatar_url: userInfo.picture || null,
-                };
-
-                // 1. Store in Zustand
-                useAppStore.setState({ userProfile });
-
-                // 2. Set persistent cookies for server proxy & session
-                const maxAge = 60 * 60 * 24 * 30; // 30 days
-                const secureFlag =
-                  window.location.protocol === "https:" ? "; Secure" : "";
-                const encodedProfile = encodeURIComponent(
-                  JSON.stringify(userProfile)
-                );
-                document.cookie = `smartspend_user=${encodedProfile}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
-                document.cookie = `smartspend_auth=google; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
-
-                // 3. Navigate to dashboard
-                router.push("/dashboard");
-              } catch (err: any) {
-                setError(err.message || "Failed to process Google sign in.");
-                setIsGoogleLoading(false);
-              }
-            }
-          },
-        });
-
-        client.requestAccessToken({ prompt: "consent" });
-      };
-
-      if (!(window as any).google?.accounts?.oauth2) {
-        let attempts = 0;
-        const checkInterval = setInterval(() => {
-          attempts++;
-          if ((window as any).google?.accounts?.oauth2) {
-            clearInterval(checkInterval);
-            triggerGoogleAuth();
-          } else if (attempts >= 10) {
-            clearInterval(checkInterval);
-            setIsGoogleLoading(false);
-            setError("Google Sign-In could not load. Please check your connection.");
-          }
-        }, 100);
-      } else {
-        triggerGoogleAuth();
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to start Google Sign-In.");
-      setIsGoogleLoading(false);
     }
   };
 
@@ -274,26 +279,28 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button 
-            type="button"
-            disabled={isLoading || isGoogleLoading}
-            onClick={handleGoogleSignIn}
-            className="w-full mt-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[var(--color-text-main)] font-medium rounded-[12px] text-[14px] hover:bg-[var(--color-surface-3)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isGoogleLoading ? (
-              <div className="w-5 h-5 border-2 border-[var(--color-primary-main)] border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" className="w-5 h-5">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                Google
-              </>
-            )}
-          </button>
+          <div id="google-signin-btn" className="w-full mt-4 flex justify-center min-h-[44px]">
+            <button 
+              type="button"
+              disabled={isLoading || isGoogleLoading}
+              onClick={handleGoogleSignIn}
+              className="w-full py-3 bg-[var(--color-surface-2)] border border-[var(--color-border-subtle)] text-[var(--color-text-main)] font-medium rounded-[12px] text-[14px] hover:bg-[var(--color-surface-3)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isGoogleLoading ? (
+                <div className="w-5 h-5 border-2 border-[var(--color-primary-main)] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Google
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 text-center">
