@@ -65,18 +65,40 @@ export default function LoginPage() {
           JSON.stringify(profile)
         )}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
 
-        // 3. Fetch user's data from Supabase
-        await useAppStore.getState().fetchData();
+        setSuccessMsg("Signed in successfully! Redirecting to dashboard...");
 
-        // 4. Navigate to dashboard
-        router.push("/dashboard");
+        // 3. Immediately hard-navigate to dashboard so cookies are sent directly to server
+        window.location.replace("/dashboard");
       }
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google.");
-    } finally {
       setIsGoogleLoading(false);
     }
   };
+
+  // Check if session is already active or whenever auth state becomes signed in
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && active) {
+        window.location.replace("/dashboard");
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user && active) {
+        window.location.replace("/dashboard");
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -136,12 +158,36 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        router.push("/dashboard");
+
+        if (data?.session && data?.user) {
+          const meta = data.user.user_metadata;
+          const profile = {
+            id: data.user.id,
+            email: data.user.email || "",
+            full_name:
+              meta?.full_name ||
+              meta?.name ||
+              data.user.email?.split("@")[0] ||
+              "User",
+            avatar_url: meta?.avatar_url || null,
+          };
+          useAppStore.setState({ userProfile: profile });
+
+          const maxAge = 60 * 60 * 24 * 30;
+          const secureFlag =
+            window.location.protocol === "https:" ? "; Secure" : "";
+          document.cookie = `smartspend_user=${encodeURIComponent(
+            JSON.stringify(profile)
+          )}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+        }
+
+        // Hard-navigate directly to dashboard
+        window.location.replace("/dashboard");
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -149,20 +195,42 @@ export default function LoginPage() {
           options: {
             data: {
               full_name: name,
-            }
-          }
+            },
+          },
         });
         if (error) throw error;
-        
-        if (data?.session) {
-          router.push("/dashboard");
+
+        if (data?.session && data?.user) {
+          const meta = data.user.user_metadata;
+          const profile = {
+            id: data.user.id,
+            email: data.user.email || "",
+            full_name:
+              meta?.full_name ||
+              meta?.name ||
+              data.user.email?.split("@")[0] ||
+              "User",
+            avatar_url: meta?.avatar_url || null,
+          };
+          useAppStore.setState({ userProfile: profile });
+
+          const maxAge = 60 * 60 * 24 * 30;
+          const secureFlag =
+            window.location.protocol === "https:" ? "; Secure" : "";
+          document.cookie = `smartspend_user=${encodeURIComponent(
+            JSON.stringify(profile)
+          )}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+
+          window.location.replace("/dashboard");
         } else {
-          setSuccessMsg("Account created! Please check your email for a confirmation link to log in.");
+          setSuccessMsg(
+            "Account created! Please check your email for a confirmation link to log in."
+          );
+          setIsLoading(false);
         }
       }
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setIsLoading(false);
     }
   };

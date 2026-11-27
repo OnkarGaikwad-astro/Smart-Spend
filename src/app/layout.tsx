@@ -19,7 +19,6 @@ export const metadata: Metadata = {
 
   description:
     "AI-powered personal finance assistant and wealth tracker for everyone. Track expenses, analyze spending, and receive intelligent financial insights.",
-  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -78,6 +77,28 @@ export default function RootLayout({
       <body className={`${dmSans.className} min-h-screen text-[var(--color-text-main)] flex flex-col antialiased`}>
         {children}
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
+        <Script
+          id="unregister-pwa-sw"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for (var i = 0; i < registrations.length; i++) {
+                    registrations[i].unregister();
+                  }
+                });
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    for (var i = 0; i < names.length; i++) {
+                      caches.delete(names[i]);
+                    }
+                  });
+                }
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
